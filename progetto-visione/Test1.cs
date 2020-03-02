@@ -26,8 +26,8 @@ namespace Vision
         static string PHOTO_PATH = @"C:\Users\Petreti Andrea\Desktop\progetto-visione\dataset\cuhk\CUHK_training_photo\photo\";
         static string SKETCH_PATH = @"C:\Users\Petreti Andrea\Desktop\progetto-visione\dataset\cuhk\CUHK_training_sketch\sketch\";
 
-        static string FACE_MODEL = @"C:\Users\Petreti Andrea\Desktop\progetto-visione\haarcascade_frontalface_default.xml";
-        static string LANDMARK_MODEL = @"C:\Users\Petreti Andrea\Desktop\progetto-visione\lbfmodel.yaml";
+        static string FACE_MODEL = @"resources\haarcascade_frontalface_default.xml";
+        static string LANDMARK_MODEL = @"resources\lbfmodel.yaml";
 
         public void Run()
         {

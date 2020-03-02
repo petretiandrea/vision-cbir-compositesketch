@@ -1,0 +1,2 @@
+resources/haarcascade_frontalface_default.xml filter=lfs diff=lfs merge=lfs -text
+resources/lbfmodel.yaml filter=lfs diff=lfs merge=lfs -text
