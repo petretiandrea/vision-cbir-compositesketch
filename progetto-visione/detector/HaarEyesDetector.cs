@@ -1,28 +1,21 @@
 ﻿using System;
-using Emgu.CV;
-using Emgu.CV.Structure;
-using System.Drawing;
 using System.Linq;
+using Emgu.CV;
+using System.Drawing;
 
-namespace Vision.Model
+namespace Vision.Detector
 {
-    class Eyes
+    public class HaarEyesDetector : EyesDetector
     {
-        public Rectangle Left { get; private set; }
-        public Rectangle Right { get; private set; }
-        public static Eyes Create(Rectangle left, Rectangle right) { return new Eyes(left, right); }
-        private Eyes(Rectangle left, Rectangle right)
+        private CascadeClassifier classifier;
+        public HaarEyesDetector(string haarEyesModel)
         {
-            Left = left;
-            Right = right;
+            classifier = new CascadeClassifier(haarEyesModel);
         }
-    }
 
-    static class EyesDetector
-    {
-        public static Eyes GetEyes<TDepth>(CascadeClassifier eyesDector, Image<Bgr, TDepth> originalImage) where TDepth : new()
+        public Eyes DetectEyes(IImage image)
         {
-            var facesRect = eyesDector.DetectMultiScale(originalImage, 1.1, 8);
+            var facesRect = classifier.DetectMultiScale(image, 1.1, 8);
             Console.WriteLine("Eyes Detected: " + facesRect.Length);
             if (facesRect.Length < 2) return null;
 
@@ -45,14 +38,6 @@ namespace Vision.Model
             }
 
             return eye1.X < eye2.X ? Eyes.Create(eye1, eye2) : Eyes.Create(eye2, eye1);
-        }
-    }
-
-    static class Extension
-    {
-        public static Point GetCenter(this Rectangle rect)
-        {
-            return new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
         }
     }
 }

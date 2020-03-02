@@ -9,25 +9,30 @@ using Emgu.CV.UI;
 using Emgu.CV.CvEnum;
 using System.Drawing;
 using Vision.Model;
+using Vision.Detector;
 
-namespace Vision
+namespace Vision.Preprocess
 {
-    class FaceNormalizer
+    /// <summary>
+    /// Pre-processing purpose. Detect a face into photo and scale, cut and rotate it.
+    /// The rotation is based on horizon line of the eyes.
+    /// </summary>
+    public class PreprocessFaceNormalizer
     {
-        private CascadeClassifier eyesDector;
+        private EyesDetector eyesDector;
 
         /// percentage that control how much of the face is visible
         private const double DESIDERED_LEFT_EYE_X = 0.35;
-        private const double DESIDERED_LEFT_EYE_Y = 0.5;
+        private const double DESIDERED_LEFT_EYE_Y = 0.4;
 
-        public FaceNormalizer(CascadeClassifier eyesDector)
+        public PreprocessFaceNormalizer(EyesDetector eyesDector)
         {
             this.eyesDector = eyesDector;
         }
 
         public Image<Gray, TDepth> Normalize<TDepth>(Image<Bgr, TDepth> originalImage, int targetWidth=512, int targetHeight = 512) where TDepth : new()
         {
-            var eyes = EyesDetector.GetEyes(eyesDector, originalImage);
+            var eyes = eyesDector.DetectEyes(originalImage);
             if (eyes == null)
             {
                 //ImageViewer.Show(originalImage);
@@ -84,18 +89,6 @@ namespace Vision
         private double RadToDegree(double rad)
         {
             return rad * (180 / Math.PI);
-        }
-    }
-
-    static class Ext
-    {
-        public static void SetCellValue<TDepth>(this Matrix<TDepth> m, int row, int col, double value) where TDepth : new()
-        {
-            m.GetRow(row).GetCol(col).SetValue(value);
-        }
-        public static TDepth GetCellValue<TDepth>(this Matrix<TDepth> m, int row, int col) where TDepth : new()
-        {
-            return m.Data[row, col];
         }
     }
 }

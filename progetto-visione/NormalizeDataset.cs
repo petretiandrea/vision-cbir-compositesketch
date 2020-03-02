@@ -11,6 +11,7 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using Vision.Model;
 using System.IO;
+using Vision.Preprocess;
 
 namespace Vision
 {
@@ -24,16 +25,13 @@ namespace Vision
 
         public void Execute()
         {
-            var classifier = new CascadeClassifier(@"C:\Users\Petreti Andrea\Desktop\progetto-visione\haarcascade_eye_tree_eyeglasses.xml");
-            var norm = new FaceNormalizer(classifier);
-            
-            NormalizeDataSet(PHOTO_PATH, norm);
-            NormalizeDataSet(SKETCH_PATH, norm);
-            NormalizeDataSet(PHOTO2_PATH, norm);
-            NormalizeDataSet(SKETCH2_PATH, norm);
+            NormalizeDataSet(PHOTO_PATH);
+            NormalizeDataSet(SKETCH_PATH);
+            NormalizeDataSet(PHOTO2_PATH);
+            NormalizeDataSet(SKETCH2_PATH);
         }
 
-        private void NormalizeDataSet(string datasetPath, FaceNormalizer normalizer)
+        private void NormalizeDataSet(string datasetPath)
         {
             var targetFolder = Directory.CreateDirectory(Path.Combine(datasetPath, "normalized"));
             var files = Directory.GetFiles(datasetPath, "*.jpg");
@@ -43,7 +41,7 @@ namespace Vision
                 var filename = Path.GetFileName(files[i]);
                 Console.WriteLine("Processing: {0}/{1} - {2}", (i + 1), files.Length, filename);
                 var img = new Image<Bgr, byte>(files[i]);
-                var target = normalizer.Normalize(img, 300, 350);
+                var target = Preprocessing.PreprocessImage(img);
                 if(target != null)
                 {
                     target.Save(Path.Combine(targetFolder.FullName, filename));

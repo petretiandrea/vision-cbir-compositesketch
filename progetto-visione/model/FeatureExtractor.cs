@@ -9,16 +9,19 @@ namespace Vision.Model
 {
     using Feature = System.Single;
 
-    interface FeatureExtractor<TColor, TDepth> where TColor : struct, IColor where TDepth : new()
+    public interface FeatureExtractor<TColor, TDepth> where TColor : struct, IColor where TDepth : new()
     {
         Feature[] ExtractDescriptor(Image<TColor, TDepth> image);
+        List<Feature[]> ExtractDescriptors(Image<TColor, TDepth>[] images);
     }
 
-    static class Extensions
+    public abstract class AbstractFeatureExtrator<TColor, TDepth> : FeatureExtractor<TColor, TDepth> where TColor : struct, IColor where TDepth : new()
     {
-        public static List<Feature[]> ExtractDescriptors<TColor, TDepth>(this FeatureExtractor<TColor, TDepth> e, Image<TColor, TDepth>[] images) where TColor : struct, IColor where TDepth : new()
+        public List<Feature[]> ExtractDescriptors(Image<TColor, TDepth>[] images)
         {
-            return images.Select(img => e.ExtractDescriptor(img)).ToList();
+            return images.Select(img => ExtractDescriptor(img)).ToList();
         }
+
+        public abstract Feature[] ExtractDescriptor(Image<TColor, TDepth> image);
     }
 }

@@ -20,8 +20,10 @@ namespace Vision
             //Application.Run(new Form1());
             //var cbr = new Model.CBRTest(1, @"C:\Users\Petreti Andrea\Desktop\progetto-visione\dataset\cuhk\CUHK_training_photo\photo\");
             //cbr.Search("f-005-01.jpg");
-            NormalizeDataset t = new NormalizeDataset();
-            t.Execute();
+           // NormalizeDataset t = new NormalizeDataset();
+            //t.Execute();
+            Test1 t = new Test1();
+            t.Run();
         }
     }
 }

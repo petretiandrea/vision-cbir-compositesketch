@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
+using Vision.Detector;
 using Vision.Model.Extractor;
 
 namespace Vision.Model
@@ -20,18 +21,31 @@ namespace Vision.Model
 
     class CBRTest : CBR
     {
-        private FusionStrategy<string> fusionStrategy;
-        private List<Dictionary<string, float[]>> database;
+        static string FACE_MODEL = @"C:\Users\Petreti Andrea\Desktop\progetto-visione\haarcascade_frontalface_default.xml";
+        static string LANDMARK_MODEL = @"C:\Users\Petreti Andrea\Desktop\progetto-visione\lbfmodel.yaml";
 
-        public CBRTest(int numberOfFeatures, string dbImagesFolder, FusionStrategy<string> fusionStrategy)
+        private FaceComponentsDetector landmark = new FaceLandmarkDetectorLBF(new CascadeFaceDetector(FACE_MODEL), LANDMARK_MODEL);
+        private FaceComponentsExtractor faceNorm = new DefaultFaceComponentsExtractor();
+
+        private FusionStrategy<string> fusionStrategy;
+        private string dbImagesFolder;
+        private List<Dictionary<string, DenseHistogram[]>> database;
+
+        public CBRTest(string dbImagesFolder, FusionStrategy<string> fusionStrategy)
         {
-            database = new List<Dictionary<string, float[]>>();
-            database.Add(Directory.GetFiles(dbImagesFolder, "*.jpg").ToDictionary(item => item, item => new float[] { 0f }));
+            this.database = new List<Dictionary<string, DenseHistogram[]>>();
+            this.dbImagesFolder = dbImagesFolder;
             this.fusionStrategy = fusionStrategy;
         }
 
         public bool Train()
         {
+            /*database = Directory.GetFiles(dbImagesFolder, "*.jpg").ToDictionary(item => item, item =>
+            {
+                var img = Preprocessing.PreprocessImage(new Image<Bgr, byte>(item));
+                var imgComponents = faceNorm.NormalizeComponents(landmark.DetectFaceComponents(img)).First();
+                return ComputeFaceComponentsHists(img, imgComponents);
+            });*/
             return true;
         }
 
@@ -42,6 +56,28 @@ namespace Vision.Model
              
             Emgu.CV.UI.ImageViewer.Show(img);
             return new string[] { "" };
+        }
+
+        public Dictionary<string, DenseHistogram[]> ComputeFaceComponentsHists(Image<Gray, byte> img, FaceComponents components)
+        {
+            var lbp = new LBP<byte>();
+            var dict = new Dictionary<string, DenseHistogram[]>();
+
+            var eyes = img.GetSubRect(components.Eyes);
+            //dict.Add("EYES", BlockLBPH(lbp, eyes, 5));
+
+            /*var mouth = img.GetSubRect(components.Mouth);
+            dict.Add("MOUTH", BlockLBPH(mouth, 5));
+
+            var nose = img.GetSubRect(components.Nose);
+            dict.Add("NOSE", BlockLBPH(nose, 5));
+
+            var eyeBrows = img.GetSubRect(components.EyeBrows);
+            eyeBrows.Resize(300, 45, Inter.Area);
+            dict.Add("EYEBROWS", BlockLBPH(eyeBrows, 5));*/
+
+            // todo: add hair component
+            return dict;
         }
     }
 }
