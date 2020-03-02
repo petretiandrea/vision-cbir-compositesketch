@@ -11,9 +11,9 @@ namespace Vision.Preprocess
 {
     public static class Preprocessing
     {
-        static string FACE_MODEL = @"C:\Users\Petreti Andrea\Desktop\progetto-visione\haarcascade_frontalface_default.xml";
-        static string EYES_MODEL = @"C:\Users\Petreti Andrea\Desktop\progetto-visione\haarcascade_eye_tree_eyeglasses.xml";
-        static string LANDMARK_MODEL = @"C:\Users\Petreti Andrea\Desktop\progetto-visione\lbfmodel.yaml";
+        static string FACE_MODEL = @"resources\haarcascade_frontalface_default.xml";
+        static string EYES_MODEL = @"resources\haarcascade_eye_tree_eyeglasses.xml";
+        static string LANDMARK_MODEL = @"resources\lbfmodel.yaml";
 
         static int PREPROCESS_TARGET_WIDTH = 300;
         static int PREPROCESS_TARGET_HEIGHT = 350;
