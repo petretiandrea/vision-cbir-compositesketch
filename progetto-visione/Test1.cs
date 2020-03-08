@@ -16,6 +16,7 @@ using Emgu.CV.CvEnum;
 using Vision.Model.Extractor;
 using Vision.Detector;
 using Vision.Preprocess;
+using Vision.CBR;
 
 namespace Vision
 {
@@ -32,8 +33,9 @@ namespace Vision
         public void Run()
         {
             //var image = GetPhotoFromSet("f-006-01.jpg");
-            var landmark = new FaceLandmarkDetectorLBF(new CascadeFaceDetector(FACE_MODEL), LANDMARK_MODEL);
+            /*var landmark = new FaceLandmarkDetectorLBF(new CascadeFaceDetector(FACE_MODEL), LANDMARK_MODEL);
             var faceNorm = new DefaultFaceComponentsExtractor();
+
 
             var photos = Directory.GetFiles(PHOTO_PATH);
             var sketches = Directory.GetFiles(SKETCH_PATH);
@@ -41,36 +43,36 @@ namespace Vision
             eyesMean.SetTo(new MCvScalar(0));
 
             var sketch = new Image<Bgr, byte>(sketches[1]);
-            var normSketch = Preprocessing.PreprocessImage(sketch);
-            var sketchComponents = faceNorm.ExtractComponentsFromImage(landmark.DetectFaceComponents(normSketch)).First();
-            var sketchHists = ComputeFaceComponentsHists(normSketch, sketchComponents);
+            var normSketch = Preprocessing.PreprocessImage(sketch);*/
 
-            //ImageViewer.Show(normSketch);
-            foreach (var img in photos.Take(5).ToList())
+            /*var classificationRank = new int[] { 5, 10, 30, 50 };
+
+            var photoTraining = Directory.GetFiles(PHOTO_PATH).Take(15).ToArray();
+            var sketchTraining = Directory.GetFiles(SKETCH_PATH).Take(5).ToArray();
+
+            var a = new PhotoSketchCBR();
+            Console.WriteLine("Training....");
+            a.Train(photoTraining);
+            Console.WriteLine("Train done.");
+
+            var contained = new float[4];
+            for (int i = 0; i < sketchTraining.Length; i++)
             {
-                var image = new Image<Bgr, byte>(img);
-                var normImage = Preprocessing.PreprocessImage(image);
-                ImageViewer.Show(normImage);
-                var facesRects = landmark.DetectFaceComponents(normImage);
-                facesRects = faceNorm.ExtractComponentsFromImage(facesRects);
-
-                var face = facesRects[0];
-
-                var dict = ComputeFaceComponentsHists(normImage, face);
-                CalculateSimilarity(dict, sketchHists);
-
-                /*foreach (var face in facesRects)
+                var rank = a.Search(sketchTraining[i]);
+                for (int j = 0; j < contained.Length; j++)
                 {
-                    //DrawFaceComponentsRect(normImage, face);
-                    //new Thread(() => ImageViewer.Show(normImage)).Start();
-                    
-                    //Console.WriteLine("ch: " + eyes.Convert<Gray, double>().Mat.NumberOfChannels);
-                    //CvInvoke.Add(eyesMean, eyes.Convert<Gray, double>(), eyesMean);
-                }*/
+                    contained[j] += rank.Take(classificationRank[j]).Contains(photoTraining[i]) ? 1 : 0;
+                }
             }
 
-            //eyesMean.ConvertTo(eyesMean, Emgu.CV.CvEnum.DepthType.Cv8U, 1.0 / 5);
-            //ImageViewer.Show(eyesMean, "Mean");
+            for(int j = 0; j < classificationRank.Length; j++)
+            {
+                Console.WriteLine("Rank-{0} accuracy: {1}%, Sketch: {2} over {3} photos", 
+                    classificationRank[j], 
+                    (contained[j] / (float)sketchTraining.Length) * 100f,
+                    sketchTraining.Length,
+                    photoTraining.Length);
+            }*/
         }
 
         private Image<Bgr, byte> GetPhotoFromSet(string imgName)
@@ -83,7 +85,7 @@ namespace Vision
             return new Image<Bgr, byte>(SKETCH_PATH + imgName);
         }
 
-        private void DrawFaceComponentsRect(Image<Gray, byte> img, FaceComponents face)
+        private void DrawFaceComponentsRect(Image<Gray, byte> img, FaceComponentBoxes face)
         {
             img.Draw(face.Eyes, new Gray(0));
             img.Draw(face.EyeBrows, new Gray(0));
@@ -107,18 +109,27 @@ namespace Vision
             }
         }
 
-        public Dictionary<string, DenseHistogram[]> ComputeFaceComponentsHists(Image<Gray, byte> img, FaceComponents components)
+        public struct FaceFeature
         {
-            var lbp = new LBP<byte>();
-            var dict = new Dictionary<string, DenseHistogram[]>();
+            public float[] EyesFeature { get; set; }
+            public float[] EyeBrowsFeature { get; set; }
+            public float[] MouthFeature { get; set; }
+            public float[] NoseFeature { get; set; }
+            public float[] HairFeature { get; set; }
+        }
 
-            var eyes = img.GetSubRect(components.Eyes);
-            dict.Add("EYES", BlockLBPH(lbp, eyes, 5));
 
-            /*var mouth = img.GetSubRect(components.Mouth);
-            dict.Add("MOUTH", BlockLBPH(mouth, 5));
+        // var lbpEyes = new HistogramBlockLBP(5, MultiscaleLBP.Create(1, 3, 5, 7));
 
-            var nose = img.GetSubRect(components.Nose);
+        public Dictionary<FaceComponent, float[]> ComputeFaceComponentsHists(Dictionary<FaceComponent, Image<Gray, byte>> componentsImage, Dictionary<FaceComponent, FeatureExtractor> featureExtractors)
+        {
+
+            /* dict.Add(FaceComponent.EYES, lbpEyes.ExtractDescriptor(eyes));
+
+
+             dict.Add(FaceComponent.MOUTH, lbpEyes.ExtractDescriptor(mouth));
+             */
+            /*var nose = img.GetSubRect(components.Nose);
             dict.Add("NOSE", BlockLBPH(nose, 5));
 
             var eyeBrows = img.GetSubRect(components.EyeBrows);
@@ -126,62 +137,9 @@ namespace Vision
             dict.Add("EYEBROWS", BlockLBPH(eyeBrows, 5));*/
 
             // todo: add hair component
-            return dict;
-        }
-
-        public DenseHistogram[] BlockLBPH(LBP<byte> algo, Image<Gray, byte> img, int numberOfPatch)
-        {
-            // 1. calculate LBP on image
-            // 2. compute the patches for image
-            // 3. for each patch compute the histogram
-            var lbp = algo.ComputeLBP(img, 1);
-            var patches = ComputePatches(lbp, numberOfPatch);
-            var hists = patches.AsParallel().Select(patch => { // parallelize
-                //lbp.Draw(patch, new Gray(0), 1);
-                //lbp.GetSubRect(patch);
-                var lbpPatch = lbp.GetSubRect(patch);
-                return algo.ComputeLBPH(lbpPatch);
-            }).ToArray();
-
-            //new Thread(() => ImageViewer.Show(lbp)).Start();
-
-            return hists;
-        }
-
-        private Rectangle[] ComputePatches(Image<Gray, byte> img, int k)
-        {
-            // TODO: compute overlapped patch
-            var patches = new Rectangle[k * k];
-            var patchSize = new Size(img.Width / k, img.Height / k);
-            var overlap = new Size(img.Width % k, img.Height % k);
-            for (int i = 0; i < patches.Length; i++)
-            {
-                var row = i / k;
-                var col = i % k;
-                var r = new Rectangle(
-                    col * patchSize.Width,
-                    row * patchSize.Height,
-                    patchSize.Width + overlap.Width,
-                    patchSize.Height + overlap.Height);
-                patches[i] = r;
-                //Console.WriteLine(r);
-            }
-            return patches;
-        }
-
-        
-
-        // TODO: allow to serialize and deserialize DenseHistogram as feature vector
-        private DenseHistogram CreateHistogramFromData<TDepth>(TDepth[] data)
-            where TDepth : new()
-        {
-            var parsedHist = new DenseHistogram(256, new RangeF(0, 256)); 
-            var m = new Matrix<TDepth>(data);
-            parsedHist.Calculate(new Matrix<TDepth>[] { m }, false, null);
-            return parsedHist;
-        }
-
-        
+            //return dict;
+            return null;
+        } 
 
         private void PrintLBP(int pattern)
         {
@@ -218,4 +176,5 @@ namespace Vision
             }
         }
     }
+    
 }

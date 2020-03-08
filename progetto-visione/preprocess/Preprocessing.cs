@@ -25,5 +25,9 @@ namespace Vision.Preprocess
             return faceNormalizer.Normalize(image, PREPROCESS_TARGET_WIDTH, PREPROCESS_TARGET_HEIGHT);
         }
 
+        public static Image<Gray, TDepth> PreprocessImage<TDepth>(string pathImage) where TDepth : new()
+        {
+            return faceNormalizer.Normalize(new Image<Bgr, TDepth>(pathImage), PREPROCESS_TARGET_WIDTH, PREPROCESS_TARGET_HEIGHT);
+        }
     }
 }

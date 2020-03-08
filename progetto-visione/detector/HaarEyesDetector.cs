@@ -16,7 +16,7 @@ namespace Vision.Detector
         public Eyes DetectEyes(IImage image)
         {
             var facesRect = classifier.DetectMultiScale(image, 1.1, 8);
-            Console.WriteLine("Eyes Detected: " + facesRect.Length);
+            //Console.WriteLine("Eyes Detected: " + facesRect.Length);
             if (facesRect.Length < 2) return null;
 
             Rectangle eye1;

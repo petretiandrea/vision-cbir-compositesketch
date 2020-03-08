@@ -20,9 +20,9 @@ namespace Vision.UI
             InitializeComponent();
         }
 
-        public void AddImage(string path)
+        public void AddImage(string path, string imageLabel = "")
         {
-            AddImage(new Image<Bgr, float>(path));
+            AddImage(new Image<Bgr, byte>(path), imageLabel);
         }
 
         public void AddImages<TColor, TDepth>(Image<TColor, TDepth>[] images) where TColor : struct, IColor where TDepth : new()
@@ -30,25 +30,35 @@ namespace Vision.UI
             foreach (var img in images) AddImage(img);
         }
 
-        public void AddImage<TColor, TDepth>(Image<TColor, TDepth> image) where TColor : struct, IColor where TDepth : new() 
+        public void AddImage<TColor, TDepth>(Image<TColor, TDepth> image, string imageLabel = "") where TColor : struct, IColor where TDepth : new()
         {
             var singleImageWidth = table.Size.Width / table.ColumnCount;
             var singleImageHeight = table.Size.Height / 2;
+
+            var label = new Label {
+                Dock = DockStyle.Top,
+                Text = imageLabel,
+                AutoEllipsis = true,
+                AutoSize = false
+            };
             var box = new ImageBox
             {
-                Anchor = AnchorStyles.Top | AnchorStyles.Left,
-                Width = singleImageWidth,
-                Height = singleImageHeight,
+                Dock = DockStyle.Fill,
+                AutoSize = true,
                 SizeMode = PictureBoxSizeMode.Zoom,
                 FunctionalMode = ImageBox.FunctionalModeOption.Minimum,
                 Image = image
             };
-            table.Controls.Add(box);
+            var layout = new Panel { Height = singleImageHeight, BorderStyle = BorderStyle.FixedSingle };
+            
+            layout.Controls.Add(label);
+            layout.Controls.Add(box);
+            table.Controls.Add(layout);
         }
 
         public void ClearGallery()
         {
-            foreach (Control box in table.Controls)
+            foreach (Control box in table.Controls.OfType<Panel>().ToList())
             {
                 table.Controls.Remove(box);
             }

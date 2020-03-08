@@ -35,28 +35,26 @@ namespace Vision.Detector
             this.facemark.LoadModel(landmarkModel);
         }
 
-        public FaceComponents[] DetectFaceComponents(IImage image)
+        public Dictionary<FaceComponent, Rectangle> DetectFaceComponents(IImage image)
         {
             var faces = new VectorOfRect(faceDetector.DetectBoxFaces(image));
             var landmarks = new VectorOfVectorOfPointF();
 
             if (facemark.Fit(image, faces, landmarks))
             {
-                return landmarks.ToArrayOfArray()
-                    .Select(faceLandmarks => ExtractFacialComponentRects(faceLandmarks))
-                    .ToArray();
+                return ExtractFacialComponentRects(landmarks.ToArrayOfArray().First());
             }
-            return Array.Empty<FaceComponents>();
+            return new Dictionary<FaceComponent, Rectangle>();
         }
 
-        private FaceComponents ExtractFacialComponentRects(PointF[] landamarksPoints)
+        private Dictionary<FaceComponent, Rectangle> ExtractFacialComponentRects(PointF[] landamarksPoints)
         {
-            var face = new FaceComponents
+            var face = new Dictionary<FaceComponent, Rectangle>()
             {
-                Eyes = ExtractRectFromLandmarks(landamarksPoints, EYES_POINT_RANGE, DEFAULT_PADDING),
-                EyeBrows = ExtractRectFromLandmarks(landamarksPoints, EYEBROWS_POINT_RANGE),
-                Nose = ExtractRectFromLandmarks(landamarksPoints, NOSE_POINT_RANGE, DEFAULT_PADDING),
-                Mouth = ExtractRectFromLandmarks(landamarksPoints, MOUTH_POINT_RANGE, DEFAULT_PADDING)
+                { FaceComponent.EYES, ExtractRectFromLandmarks(landamarksPoints, EYES_POINT_RANGE, DEFAULT_PADDING) },
+                { FaceComponent.EYEBROWS, ExtractRectFromLandmarks(landamarksPoints, EYEBROWS_POINT_RANGE) },
+                { FaceComponent.NOSE, ExtractRectFromLandmarks(landamarksPoints, NOSE_POINT_RANGE, DEFAULT_PADDING) },
+                { FaceComponent.MOUTH, ExtractRectFromLandmarks(landamarksPoints, MOUTH_POINT_RANGE, DEFAULT_PADDING) }
             };
             return face;
         }

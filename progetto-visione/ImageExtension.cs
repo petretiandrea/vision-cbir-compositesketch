@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Emgu.CV;
 using Emgu.CV.Structure;
+using Vision.Model;
 
 namespace Vision
 {
@@ -28,6 +29,13 @@ namespace Vision
                 return img[row, col].Intensity;
             }
             return defaultValue;
+        }
+    }
+
+    public static class RankExtension {
+        public static Rank<T,S> ToRank<T, S>(this IEnumerable<Tuple<T, S>> enumarable)
+        {
+            return Rank.Create(enumarable);
         }
     }
 }

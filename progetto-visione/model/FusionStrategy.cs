@@ -3,44 +3,66 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Vision.Utils;
 
 namespace Vision.Model
 {
-    interface FusionStrategy<T>
+    public interface FusionStrategy<T>
     {
-        List<T> Fusion(List<T[]> rankBoards, params double[] weights);
+        Rank<T, double> Fusion<S>(params Rank<T, S>[] rankBoards);
     }
 
-
-    class BordaCount<T> : FusionStrategy<T>
+    public class Rank<T, S> : List<Tuple<T, S>>
     {
-        public List<T> Fusion(List<T[]> rankBoards, params double[] weights)
+        public Rank(IEnumerable<Tuple<T, S>> collection) : base(collection) { }
+    }
+
+    public static class Rank {
+        public static Rank<T, S> Create<T, S>(IEnumerable<Tuple<T, S>> list) { return new Rank<T, S>(list); }
+        public static Rank<T, float> FromMetric<T>(IEnumerable<Tuple<T, float[]>> db, float[] toCompareFeatures, FeatureCompareMetric compareMetric)
+        {
+            return Rank.Create(db.Select(item => Tuple.Create(item.Item1, compareMetric(toCompareFeatures, item.Item2)))
+                .OrderByDescending(item => item.Item2)
+                .ToList());
+        }
+    }
+
+    public class BordaCount<T> : FusionStrategy<T>
+    {
+        private double[] weights;
+
+        public BordaCount(params double[] weights)
+        {
+            this.weights = weights;
+        }
+
+        public Rank<T, double> Fusion<S>(params Rank<T, S>[] rankBoards)
         {
             Dictionary<T, double> finalRankBoard = new Dictionary<T, double>();
 
-            for(int i = 0; i < rankBoards.Count; i++)
+            for(int i = 0; i < rankBoards.Length; i++)
             {
                 AddBoard(finalRankBoard, rankBoards[i], weights[i]);
             }
 
-            var orderedFinalRank = from r in finalRankBoard orderby r.Value descending select r.Key;
-            return orderedFinalRank.ToList();
+            var orderedFinalRank = from r in finalRankBoard orderby r.Value descending select Tuple.Create(r.Key, r.Value);
+            return orderedFinalRank.ToRank();
         }
 
-        private void AddBoard(Dictionary<T, double> finalRankBoard, T[] rankBoard, double weight)
+        private void AddBoard<S>(Dictionary<T, double> finalRankBoard, Rank<T, S> rankBoard, double weight)
         {
-            for(int i = 0; i < rankBoard.Length; i++)
+            for(int i = 0; i < rankBoard.Count; i++)
             {
-                T key = rankBoard[i];
+                T key = rankBoard[i].Item1;
                 double currentScore = 0; // actual score for the same entry
-                double score = weight * (rankBoard.Length - i); // score for this enty
+                double score = weight * (rankBoard.Count - i); // score for this enty
                 // if entry is present, sum the scores, otherwise add the new entry
                 if(finalRankBoard.TryGetValue(key, out currentScore))
                 {
-                    finalRankBoard[rankBoard[i]] = currentScore + score;
+                    finalRankBoard[key] = currentScore + score;
                 } else
                 {
-                    finalRankBoard.Add(rankBoard[i], score);
+                    finalRankBoard.Add(key, score);
                 }
             }
         }
