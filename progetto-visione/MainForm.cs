@@ -17,22 +17,22 @@ using Vision.ui.controller;
 
 namespace Vision
 {
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
         private PhotoSketchCBRController controller;
-        private TrainingForm trainingForm;
+        private SettingsForm settings;
 
-        public Form1(PhotoSketchCBRController controller)
+        public MainForm(PhotoSketchCBRController controller)
         {
             InitializeComponent();
             this.controller = controller;
             this.controller.SearchCompleted += SearchCompleted;
-            this.trainingForm = new TrainingForm(controller);
+            this.settings = new SettingsForm(controller);
         }
 
         private void SearchCompleted(object sender, Rank<string, double> results)
         {
-            if (trainingForm != null) trainingForm.Enabled = true;
+            if (settings != null) settings.Enabled = true;
             ShowResults(results.Select(r => r.Item1).ToArray(), results.Select(r => string.Format("Name: {0}, Score: {1}", Path.GetFileName(r.Item1), r.Item2)).ToArray());
         }
 
@@ -40,9 +40,9 @@ namespace Vision
         private void OnBtnSearchSketchClick(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(boxSketchPath.Text)) return;
-            if (trainingForm != null) trainingForm.Enabled = false;
+            if (settings != null) settings.Enabled = false;
 
-            controller.StartSearch(boxSketchPath.Text);
+            controller.StartSearch(boxSketchPath.Text, Gender.UNKOWN);
         }
 
         private void OnSketchPathClick(object sender, EventArgs e)
@@ -52,19 +52,16 @@ namespace Vision
 
         private void OnBtnSettingsClick(object sender, EventArgs e)
         {
-            if (trainingForm != null && trainingForm.Visible) return;
-            trainingForm.StartPosition = FormStartPosition.Manual;
-            trainingForm.Location = new Point(Location.X + Size.Width, Location.Y);
-            trainingForm.ShowDialog(this);
+            if (settings != null && settings.Visible) return;
+            settings.StartPosition = FormStartPosition.Manual;
+            settings.Location = new Point(Location.X + Size.Width, Location.Y);
+            settings.ShowDialog(this);
         }
 
         public void ShowResults(string[] imageResults, string[] labels)
         {
             imageGallery.ClearGallery();
-            for (int i = 0; i < imageResults.Length; i++)
-            {
-                imageGallery.AddImage(imageResults[i], labels[i]);
-            }
+            imageGallery.AddImages(imageResults, labels);
         }
 
         private string RequireSketchFileSelection()

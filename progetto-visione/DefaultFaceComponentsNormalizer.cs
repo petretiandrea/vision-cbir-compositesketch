@@ -35,23 +35,17 @@ namespace Vision.Model
             Detector = detector;
         }
 
-        public Dictionary<FaceComponent, Image<TColor, TDepth>> ExtractComponentsFromImage<TColor, TDepth>(Image<TColor, TDepth> image)
+        public Face<Image<TColor, TDepth>> ExtractComponentsFromImage<TColor, TDepth>(Image<TColor, TDepth> image)
             where TColor : struct, IColor
             where TDepth : new()
         {
-            var faceComponentBoxes = Detector.DetectFaceComponents(image);
-            var subImages = faceComponentBoxes
-                //.AsParallel()
+            var faceComponentBoxes = Detector.Fit(image);
+            var subImages = faceComponentBoxes.Item2
                 .Select(keyvalue => new { keyvalue.Key, Value = ExtractSubImage(image, keyvalue) })
-                //.AsSequential()
                 .ToDictionary(tuple => tuple.Key, tuple => tuple.Value);
 
-            if(!subImages.ContainsKey(FaceComponent.HAIR))
-            {
-                subImages.Add(FaceComponent.HAIR, ExtractHair(image, faceComponentBoxes[FaceComponent.EYEBROWS]));
-            }
-
-            return subImages;
+            var shape = faceComponentBoxes.Item1.Aggregate(new List<float>(), (acc, p) => { acc.Add(p.X); acc.Add(p.Y); return acc; }).ToArray();
+            return Face.FromDictionary(subImages, shape);
         }
 
         private Image<TColor, TDepth> ExtractSubImage<TColor, TDepth>(Image<TColor, TDepth> image, KeyValuePair<FaceComponent, Rectangle> boundingBox)
@@ -59,27 +53,35 @@ namespace Vision.Model
             where TDepth : new()
         {
             var normParams = NORMALIZE_PARAMS[boundingBox.Key];
-            var normBoundingBox = NormalizeAspectRatio(boundingBox.Value, normParams.AspectRatio);
-            var resizedImage = ResizeFromParams(image.GetSubRect(normBoundingBox), normParams);
+            var normBoundingBox = boundingBox.Key == FaceComponent.HAIR ?
+                NormalizeHairAspectRatio(image, boundingBox.Value) : 
+                NormalizeAspectRatio(boundingBox.Value, normParams.AspectRatio);
+            try
+            {
+                var resizedImage = ResizeFromParams(image.GetSubRect(normBoundingBox), normParams);
 
-            Console.WriteLine("Box: {0}, TR: {1}, R: {2}", normBoundingBox, resizedImage.Size, resizedImage.Height / (float)resizedImage.Width);
-            return resizedImage;
+                Console.WriteLine("Box: {0}, TR: {1}, R: {2}", normBoundingBox, resizedImage.Size, resizedImage.Height / (float)resizedImage.Width);
+                return resizedImage;
+            } catch(Exception e)
+            {
+                Console.WriteLine(e);
+                throw e;
+            }
         }
 
-        private Image<TColor, TDepth> ExtractHair<TColor, TDepth>(Image<TColor, TDepth> image, Rectangle eyebrows)
+        private Rectangle NormalizeHairAspectRatio<TColor, TDepth>(Image<TColor, TDepth> image, Rectangle hairRect)
             where TColor : struct, IColor
             where TDepth : new()
         {
             var hairNormParams = NORMALIZE_PARAMS[FaceComponent.HAIR];
-            var hairHeight = image.Height - (image.Height - eyebrows.Top);
-            var boundingBox = new Rectangle(0, 0, image.Width, hairHeight);
-            var marginBottom = (int) Math.Floor(Math.Abs((image.Width * hairNormParams.AspectRatio) - boundingBox.Height));
-            boundingBox.Height -= marginBottom;
+            var excessHeight = (int) Math.Floor((image.Width * hairNormParams.AspectRatio) - hairRect.Height);
+            hairRect.Height += excessHeight;
+            
+            /*var color = image.Convert<Bgr, byte>();
+            color.Draw(hairRect, new Bgr(0, 255, 0));
+            ImageViewer.Show(color);*/
 
-            var resizedImage = ResizeFromParams(image.GetSubRect(boundingBox), hairNormParams);
-
-            Console.WriteLine("a: {0}, {1}", boundingBox, resizedImage.Height / (float)resizedImage.Width);
-            return resizedImage;
+            return hairRect;
         }
 
         private Image<TColor, TDepth> ResizeFromParams<TColor, TDepth>(Image<TColor, TDepth> image, FaceComponentParams param)
@@ -92,8 +94,8 @@ namespace Vision.Model
 
         private Rectangle NormalizeAspectRatio(Rectangle rect, double aspectRatio = 1)
         {
-            var targetHeight = Math.Floor(rect.Width * aspectRatio);
-            var padding = Math.Floor((targetHeight - rect.Height) / 2d);
+            var targetHeight = Math.Ceiling(rect.Width * aspectRatio);
+            var padding = Math.Ceiling((targetHeight - rect.Height) / 2d);
             var target = new Rectangle(rect.Location, rect.Size);
             target.Inflate(0, (int) padding);
             return target;

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Vision.Utils;
+using Vision.Model;
 
 namespace Vision.Model.Extractor
 {
@@ -41,7 +41,7 @@ namespace Vision.Model.Extractor
                 .ToArray();
         }
 
-        public static float CalculareSimilarity(float[] features1, float[] features2, int numberOfCell, FeatureCompareMetric metric)
+        public static double CalculareSimilarity(float[] features1, float[] features2, int numberOfCell, FeatureCompareMetric metric)
         {
             if (features1.Length != features2.Length) return -1; // TODO launche exception
 
@@ -53,7 +53,7 @@ namespace Vision.Model.Extractor
                     SketchCellFeature = features2.Skip(cellIndex * featuresChunckLength).Take(featuresChunckLength).ToArray()
                 })
                 .Select(chunkFeatures => metric(chunkFeatures.PhotoCellFeature, chunkFeatures.SketchCellFeature))
-                .Aggregate(0f, (acc, sim) => acc + sim);
+                .Aggregate(0d, (acc, sim) => acc + sim);
         }
     }
 }

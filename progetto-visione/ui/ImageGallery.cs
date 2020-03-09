@@ -25,11 +25,6 @@ namespace Vision.UI
             AddImage(new Image<Bgr, byte>(path), imageLabel);
         }
 
-        public void AddImages<TColor, TDepth>(Image<TColor, TDepth>[] images) where TColor : struct, IColor where TDepth : new()
-        {
-            foreach (var img in images) AddImage(img);
-        }
-
         public void AddImage<TColor, TDepth>(Image<TColor, TDepth> image, string imageLabel = "") where TColor : struct, IColor where TDepth : new()
         {
             var singleImageWidth = table.Size.Width / table.ColumnCount;
@@ -54,6 +49,24 @@ namespace Vision.UI
             layout.Controls.Add(label);
             layout.Controls.Add(box);
             table.Controls.Add(layout);
+        }
+
+        public void AddImages(string[] paths, string[] imageLabels = default(string[]))
+        {
+            for (int i = 0; i < paths.Length; i++)
+            {
+                AddImage(paths[i], imageLabels.ElementAtOrDefault(i));
+            }
+        }
+
+        public void AddImages<TColor, TDepth>(Image<TColor, TDepth>[] images, string[] imageLabels = default(string[])) 
+            where TColor : struct, IColor 
+            where TDepth : new()
+        {
+            for (int i = 0; i < images.Length; i++)
+            {
+                AddImage(images[i], imageLabels.ElementAtOrDefault(i));
+            }
         }
 
         public void ClearGallery()

@@ -1,6 +1,6 @@
 ﻿namespace Vision.ui
 {
-    partial class TrainingForm
+    partial class SettingsForm
     {
         /// <summary>
         /// Required designer variable.
@@ -236,7 +236,7 @@
             this.progressBox.TabIndex = 7;
             this.progressBox.Visible = false;
             // 
-            // TrainingForm
+            // SettingsForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -246,7 +246,7 @@
             this.Controls.Add(this.boxDbPath);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.btnStartTrain);
-            this.Name = "TrainingForm";
+            this.Name = "SettingsForm";
             this.Text = "TrainingForm";
             this.groupBox1.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);

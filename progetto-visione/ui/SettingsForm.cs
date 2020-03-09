@@ -11,11 +11,11 @@ using Vision.ui.controller;
 
 namespace Vision.ui
 {
-    public partial class TrainingForm : Form
+    public partial class SettingsForm : Form
     {
         private PhotoSketchCBRController controller;
 
-        public TrainingForm(PhotoSketchCBRController controller)
+        public SettingsForm(PhotoSketchCBRController controller)
         {
             InitializeComponent();
             this.controller = controller;

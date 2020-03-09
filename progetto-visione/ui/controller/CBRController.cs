@@ -29,11 +29,11 @@ namespace Vision.ui.controller
             SearchSize = 50;
         }
 
-        public void StartSearch(string pathImage)
+        public void StartSearch(string pathImage, Gender gender)
         {
             if (searchTask != null && searchTask.IsBusy) return;
             searchTask = new BackgroundWorker();
-            searchTask.DoWork += (sender, e) => e.Result = CBR.Search(pathImage, SearchSize);
+            searchTask.DoWork += (sender, e) => e.Result = CBR.Search(pathImage, gender, SearchSize);
             searchTask.RunWorkerCompleted += (sender, e) => SearchCompleted.Invoke(this, e.Result as Rank<string, double>);
             searchTask.RunWorkerAsync();
         }
@@ -52,7 +52,7 @@ namespace Vision.ui.controller
 
         public void ChangeWeight(params double[] weights)
         {
-            CBR.SearchFusionStrategy = new BordaCount<string>(weights);
+            CBR.SearchFusionStrategy = new BordaCount(weights);
         }
     }
 }

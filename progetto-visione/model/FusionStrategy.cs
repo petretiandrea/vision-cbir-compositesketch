@@ -3,31 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Vision.Utils;
+using Vision.Model;
 
 namespace Vision.Model
 {
-    public interface FusionStrategy<T>
+    public interface FusionStrategy
     {
-        Rank<T, double> Fusion<S>(params Rank<T, S>[] rankBoards);
+        Rank<T, double> Fusion<T, S>(params Rank<T, S>[] rankBoards);
     }
 
-    public class Rank<T, S> : List<Tuple<T, S>>
-    {
-        public Rank(IEnumerable<Tuple<T, S>> collection) : base(collection) { }
-    }
-
-    public static class Rank {
-        public static Rank<T, S> Create<T, S>(IEnumerable<Tuple<T, S>> list) { return new Rank<T, S>(list); }
-        public static Rank<T, float> FromMetric<T>(IEnumerable<Tuple<T, float[]>> db, float[] toCompareFeatures, FeatureCompareMetric compareMetric)
-        {
-            return Rank.Create(db.Select(item => Tuple.Create(item.Item1, compareMetric(toCompareFeatures, item.Item2)))
-                .OrderByDescending(item => item.Item2)
-                .ToList());
-        }
-    }
-
-    public class BordaCount<T> : FusionStrategy<T>
+    public class BordaCount : FusionStrategy
     {
         private double[] weights;
 
@@ -36,7 +21,7 @@ namespace Vision.Model
             this.weights = weights;
         }
 
-        public Rank<T, double> Fusion<S>(params Rank<T, S>[] rankBoards)
+        public Rank<T, double> Fusion<T, S>(params Rank<T, S>[] rankBoards)
         {
             Dictionary<T, double> finalRankBoard = new Dictionary<T, double>();
 
@@ -49,7 +34,7 @@ namespace Vision.Model
             return orderedFinalRank.ToRank();
         }
 
-        private void AddBoard<S>(Dictionary<T, double> finalRankBoard, Rank<T, S> rankBoard, double weight)
+        private void AddBoard<T, S>(Dictionary<T, double> finalRankBoard, Rank<T, S> rankBoard, double weight)
         {
             for(int i = 0; i < rankBoard.Count; i++)
             {

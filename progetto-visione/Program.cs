@@ -22,13 +22,7 @@ namespace Vision
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1(controller));
-            //var cbr = new Model.CBRTest(1, @"C:\Users\Petreti Andrea\Desktop\progetto-visione\dataset\cuhk\CUHK_training_photo\photo\");
-            //cbr.Search("f-005-01.jpg");
-           // NormalizeDataset t = new NormalizeDataset();
-            //t.Execute();
-            //Test1 t = new Test1();
-            //t.Run();
+            Application.Run(new MainForm(controller));
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using Vision.UI;
 namespace Vision
 {
-    partial class Form1
+    partial class MainForm
     {
         /// <summary>
         /// Variabile di progettazione necessaria.
@@ -98,7 +98,7 @@ namespace Vision
             this.btnSearchSketch.UseVisualStyleBackColor = true;
             this.btnSearchSketch.Click += new System.EventHandler(this.OnBtnSearchSketchClick);
             // 
-            // Form1
+            // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -108,7 +108,7 @@ namespace Vision
             this.Controls.Add(this.boxSketchPath);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.groupBox1);
-            this.Name = "Form1";
+            this.Name = "MainForm";
             this.Text = "Form1";
             this.groupBox1.ResumeLayout(false);
             this.ResumeLayout(false);

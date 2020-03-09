@@ -96,14 +96,16 @@
     <Compile Include="model\extractor\CircularMultiscaleLBP.cs" />
     <Compile Include="model\Face.cs" />
     <Compile Include="detector\FaceLandmarkDetectorLBF.cs" />
-    <Compile Include="model\FeatureVector.cs" />
+    <Compile Include="model\FaceFeatureDB.cs" />
+    <Compile Include="model\Rank.cs" />
+    <Compile Include="performance\TestAccuracy.cs" />
     <Compile Include="PhotoSketchCBR.cs" />
     <Compile Include="preprocess\FaceNormalizer.cs" />
-    <Compile Include="Form1.cs">
+    <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form1.Designer.cs">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <Compile Include="MainForm.Designer.cs">
+      <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
     <Compile Include="model\CBR.cs" />
     <Compile Include="detector\EyesDetector.cs" />
@@ -114,7 +116,6 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="NormalizeDataset.cs" />
-    <Compile Include="Test1.cs" />
     <Compile Include="ui\controller\CBRController.cs" />
     <Compile Include="ui\ImageGallery.cs">
       <SubType>UserControl</SubType>
@@ -122,16 +123,15 @@
     <Compile Include="ui\ImageGallery.Designer.cs">
       <DependentUpon>ImageGallery.cs</DependentUpon>
     </Compile>
-    <Compile Include="ui\TrainingForm.cs">
+    <Compile Include="ui\SettingsForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="ui\TrainingForm.Designer.cs">
-      <DependentUpon>TrainingForm.cs</DependentUpon>
+    <Compile Include="ui\SettingsForm.Designer.cs">
+      <DependentUpon>SettingsForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="utils\HistogramUtils.cs" />
-    <Compile Include="utils\Utils.cs" />
-    <EmbeddedResource Include="Form1.resx">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <Compile Include="model\Metrics.cs" />
+    <EmbeddedResource Include="MainForm.resx">
+      <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -146,8 +146,8 @@
     <EmbeddedResource Include="ui\ImageGallery.resx">
       <DependentUpon>ImageGallery.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="ui\TrainingForm.resx">
-      <DependentUpon>TrainingForm.cs</DependentUpon>
+    <EmbeddedResource Include="ui\SettingsForm.resx">
+      <DependentUpon>SettingsForm.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
@@ -174,6 +174,9 @@
     <Content Include="resources\haarcascade_frontalface_default.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="utils\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
