@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,18 +11,20 @@ namespace Vision.Model
     {
         public Rank(IEnumerable<Tuple<T, S>> collection) : base(collection) { }
 
-        public void NormalizeScore(Func<S[], Func<S, S>> normalizeFunction)
+        public Rank<T, S> NormalizeScore(Func<S[], Func<S, S>> normalizeFunction)
         {
             var scoreNormFunction = normalizeFunction(this.Select(r => r.Item2).ToArray());
             for(int i = 0; i < this.Count; i++)
             {
                 this[i] = Tuple.Create(this[i].Item1, scoreNormFunction(this[i].Item2));
             }
+            return this;
         }
     }
 
     public static class Rank
     {
+        public static Rank<T, S> Empty<T, S>() { return Rank.Create(new List<Tuple<T, S>>()); }
         public static Rank<T, S> Create<T, S>(IEnumerable<Tuple<T, S>> list) { return new Rank<T, S>(list); }
         
         public static Rank<T, double> FromMetric<T>(IEnumerable<Tuple<T, float[]>> db, float[] toCompareFeatures, FeatureCompareMetric compareMetric)

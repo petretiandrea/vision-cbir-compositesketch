@@ -14,11 +14,11 @@ namespace Vision.Model
 
     public class BordaCount : FusionStrategy
     {
-        private double[] weights;
+        public double[] Weights { get; private set; }
 
         public BordaCount(params double[] weights)
         {
-            this.weights = weights;
+            this.Weights = weights;
         }
 
         public Rank<T, double> Fusion<T, S>(params Rank<T, S>[] rankBoards)
@@ -27,7 +27,7 @@ namespace Vision.Model
 
             for(int i = 0; i < rankBoards.Length; i++)
             {
-                AddBoard(finalRankBoard, rankBoards[i], weights[i]);
+                AddBoard(finalRankBoard, rankBoards[i], Weights[i]);
             }
 
             var orderedFinalRank = from r in finalRankBoard orderby r.Value descending select Tuple.Create(r.Key, r.Value);

@@ -37,23 +37,31 @@ namespace Vision.Model.Extractor
         public static float[] CalculateHistogramFromMLBP(Image<Gray, byte>[] images)
         {
             return images.Select(img => LBPUtils.CalculateHistogramFromLBP(img))
-                .Aggregate(new List<float>(), (acc, hist) => { acc.AddRange(hist); return acc; })
+                .SelectMany(hist => hist)
                 .ToArray();
         }
 
-        public static double CalculareSimilarity(float[] features1, float[] features2, int numberOfCell, FeatureCompareMetric metric)
+        public static double CalculareSimilarity(float[] features1, float[] features2, int numberOfPatch, FeatureCompareMetric metric)
         {
-            if (features1.Length != features2.Length) return -1; // TODO launche exception
+            if (features1.Length != features2.Length) throw new ArgumentException("The features vector must be to same length");
 
-            var featuresChunckLength = features1.Length / (numberOfCell * numberOfCell);
-            return Enumerable.Range(0, (numberOfCell * numberOfCell))
+            var featuresChunckLength = features1.Length / (numberOfPatch * numberOfPatch);
+            return Enumerable.Range(0, (numberOfPatch * numberOfPatch))
+                .AsParallel()
                 .Select(cellIndex => new
                 {
-                    PhotoCellFeature = features1.Skip(cellIndex * featuresChunckLength).Take(featuresChunckLength).ToArray(),
-                    SketchCellFeature = features2.Skip(cellIndex * featuresChunckLength).Take(featuresChunckLength).ToArray()
+                    PhotoPatchFeatures = features1.SubArray(cellIndex * featuresChunckLength, featuresChunckLength),
+                    SketchPatchFeature = features2.SubArray(cellIndex * featuresChunckLength, featuresChunckLength)
                 })
-                .Select(chunkFeatures => metric(chunkFeatures.PhotoCellFeature, chunkFeatures.SketchCellFeature))
+                .Select(chunkFeatures => metric(chunkFeatures.PhotoPatchFeatures, chunkFeatures.SketchPatchFeature))
                 .Aggregate(0d, (acc, sim) => acc + sim);
+        }
+
+        public static T[] SubArray<T>(this T[] data, int index, int length)
+        {
+            T[] result = new T[length];
+            Array.Copy(data, index, result, 0, length);
+            return result;
         }
     }
 }

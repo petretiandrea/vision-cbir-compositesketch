@@ -25,7 +25,6 @@ namespace Vision.Model
 
         public static FeatureCompareMetric CosineDistance = (float[] features1, float[] features2) =>
         {
-            // TODO: implement cosine similarty.
             var f1f2 = features1.Zip(features2, (f1, f2) => f1 * f2).Sum();
             var f1f1 = features1.Select(f1 => f1 * f1).Sum();
             var f2f2 = features2.Select(f2 => f2 * f2).Sum();

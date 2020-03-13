@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Emgu.CV;
 using Emgu.CV.Structure;
@@ -35,32 +37,32 @@ namespace Vision.Model
             Detector = detector;
         }
 
-        public Face<Image<TColor, TDepth>> ExtractComponentsFromImage<TColor, TDepth>(Image<TColor, TDepth> image)
+        public FaceComponentContainer<Image<TColor, TDepth>, float[]> ExtractComponentsFromImage<TColor, TDepth>(Image<TColor, TDepth> image)
             where TColor : struct, IColor
             where TDepth : new()
         {
+            if (image == null) return FaceComponentContainer.Empty<Image<TColor, TDepth>, float[]>();
             var faceComponentBoxes = Detector.Fit(image);
-            var subImages = faceComponentBoxes.Item2
-                .Select(keyvalue => new { keyvalue.Key, Value = ExtractSubImage(image, keyvalue) })
+            var subImages = NORMALIZE_PARAMS
+                .Select(kv => new { kv.Key, Value = ExtractSubImage(image, faceComponentBoxes.GetComponent(kv.Key), kv) })
                 .ToDictionary(tuple => tuple.Key, tuple => tuple.Value);
 
-            var shape = faceComponentBoxes.Item1.Aggregate(new List<float>(), (acc, p) => { acc.Add(p.X); acc.Add(p.Y); return acc; }).ToArray();
-            return Face.FromDictionary(subImages, shape);
+            var shape = faceComponentBoxes.Shape.SelectMany(p => new float[] { p.X, p.Y }).ToArray();
+            return FaceComponentContainer.FromDictionary(subImages, shape);
         }
 
-        private Image<TColor, TDepth> ExtractSubImage<TColor, TDepth>(Image<TColor, TDepth> image, KeyValuePair<FaceComponent, Rectangle> boundingBox)
+        private Image<TColor, TDepth> ExtractSubImage<TColor, TDepth>(Image<TColor, TDepth> image, Rectangle boundingBox, KeyValuePair<FaceComponent, FaceComponentParams> normParams)
             where TColor : struct, IColor
             where TDepth : new()
         {
-            var normParams = NORMALIZE_PARAMS[boundingBox.Key];
-            var normBoundingBox = boundingBox.Key == FaceComponent.HAIR ?
-                NormalizeHairAspectRatio(image, boundingBox.Value) : 
-                NormalizeAspectRatio(boundingBox.Value, normParams.AspectRatio);
+            var normBoundingBox = normParams.Key == FaceComponent.HAIR ?
+                NormalizeHairAspectRatio(image, boundingBox) : 
+                NormalizeAspectRatio(boundingBox, normParams.Value.AspectRatio);
             try
             {
-                var resizedImage = ResizeFromParams(image.GetSubRect(normBoundingBox), normParams);
-
-                Console.WriteLine("Box: {0}, TR: {1}, R: {2}", normBoundingBox, resizedImage.Size, resizedImage.Height / (float)resizedImage.Width);
+                var resizedImage = ResizeFromParams(image.GetSubRect(normBoundingBox), normParams.Value);
+                //resizedImage.Save(Path.Combine("faces_pieces", $"{image.GetHashCode()}-{normParams.Key}.jpg"));
+                //Console.WriteLine("Box: {0}, TR: {1}, R: {2}", normBoundingBox, resizedImage.Size, resizedImage.Height / (float)resizedImage.Width);
                 return resizedImage;
             } catch(Exception e)
             {
@@ -77,7 +79,7 @@ namespace Vision.Model
             var excessHeight = (int) Math.Floor((image.Width * hairNormParams.AspectRatio) - hairRect.Height);
             hairRect.Height += excessHeight;
             
-            /*var color = image.Convert<Bgr, byte>();
+            /*var color = image.Convert<Bgr, byte>();   
             color.Draw(hairRect, new Bgr(0, 255, 0));
             ImageViewer.Show(color);*/
 

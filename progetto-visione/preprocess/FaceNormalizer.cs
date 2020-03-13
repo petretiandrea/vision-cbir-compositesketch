@@ -33,11 +33,6 @@ namespace Vision.Preprocess
         public Image<Gray, TDepth> Normalize<TDepth>(Image<Bgr, TDepth> originalImage, int targetWidth=512, int targetHeight = 512) where TDepth : new()
         {
             var eyes = eyesDector.DetectEyes(originalImage);
-            if (eyes == null)
-            {
-                //ImageViewer.Show(originalImage);
-                return null;
-            }
             //DrawEyesRect(originalImage, eyes);
             // detect angle respect to horizontal line of eyes
             var dy = eyes.Right.GetCenter().Y - eyes.Left.GetCenter().Y;
@@ -56,23 +51,24 @@ namespace Vision.Preprocess
             var ty = targetHeight * DESIDERED_LEFT_EYE_Y;
 
             // create affine matrix
-            var rotationMatrix = new RotationMatrix2D(new PointF(eyesCenterX, eyesCenterY), rotationAngle, targetScale);
-            var affineMatrix = new Matrix<double>(rotationMatrix.Rows, rotationMatrix.Cols, rotationMatrix.DataPointer);
-            //rotationMatrix.Dispose();
+            using (var rotationMatrix = new RotationMatrix2D(new PointF(eyesCenterX, eyesCenterY), rotationAngle, targetScale))
+            using (var affineMatrix = new Matrix<double>(rotationMatrix.Rows, rotationMatrix.Cols, rotationMatrix.DataPointer))
+            {
+                affineMatrix.SetCellValue(0, 2, affineMatrix.GetCellValue(0, 2) + (tx - eyesCenterX));
+                affineMatrix.SetCellValue(1, 2, affineMatrix.GetCellValue(1, 2) + (ty - eyesCenterY));
 
-            affineMatrix.SetCellValue(0, 2, affineMatrix.GetCellValue(0, 2) + (tx - eyesCenterX));
-            affineMatrix.SetCellValue(1, 2, affineMatrix.GetCellValue(1, 2) + (ty - eyesCenterY));
+                var resized = originalImage.WarpAffine(affineMatrix.Mat,
+                    targetWidth,
+                    targetHeight,
+                    Inter.Area,
+                    Warp.Default,
+                    BorderType.Constant,
+                    new Bgr()
+                );
 
-            var resized = originalImage.WarpAffine(affineMatrix.Mat,
-                targetWidth,
-                targetHeight,
-                Inter.Area,
-                Warp.Default,
-                BorderType.Default,
-                new Bgr()
-            );
-
-            return resized.Convert<Gray, TDepth>();
+                //ImageViewer.Show(resized);
+                return resized.Convert<Gray, TDepth>();
+            }
         }
 
         private void DrawEyesRect<TDepth>(Image<Bgr, TDepth> img, Eyes eyes) where TDepth : new()

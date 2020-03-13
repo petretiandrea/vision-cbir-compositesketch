@@ -55,7 +55,7 @@ namespace Vision.Model.Extractor
             return patches
                 .Select(patch => lbpImage.GetSubRect(patch))
                 .Select(imgPatch => LBPUtils.CalculateHistogramFromLBP(imgPatch.Convert<Gray, byte>()))
-                .Aggregate(new List<float>(), (acc, hist) => { acc.AddRange(hist); return acc; })
+                .SelectMany(hist => hist)
                 .ToArray();
         }
     }
@@ -75,10 +75,9 @@ namespace Vision.Model.Extractor
 
             var patches = ComputePatches(image, NumberOfCell);
             return patches
-                //.AsParallel()
                 .Select(patch => multiscaleImages.Select(lbpImage => lbpImage.GetSubRect(patch)).ToArray())
                 .Select(multiscalePatches => LBPUtils.CalculateHistogramFromMLBP(multiscalePatches))
-                .Aggregate(new List<float>(), (acc, hist) => { acc.AddRange(hist); return acc; })
+                .SelectMany(hist => hist)
                 .ToArray();
         }
     }

@@ -36,7 +36,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>Vision.Program</StartupObject>
+    <StartupObject>Vision.performance.Tests</StartupObject>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -59,16 +59,33 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="CsvHelper, Version=15.0.0.0, Culture=neutral, PublicKeyToken=8c4959082be5c823, processorArchitecture=MSIL">
+      <HintPath>..\packages\CsvHelper.15.0.1\lib\net45\CsvHelper.dll</HintPath>
+    </Reference>
     <Reference Include="Emgu.CV.UI, Version=3.4.1.2976, Culture=neutral, PublicKeyToken=7281126722ab4438, processorArchitecture=MSIL">
       <HintPath>..\packages\EMGU-CV.3.4.1\lib\Emgu.CV.UI.dll</HintPath>
     </Reference>
     <Reference Include="Emgu.CV.World, Version=3.4.1.2976, Culture=neutral, PublicKeyToken=7281126722ab4438, processorArchitecture=MSIL">
       <HintPath>..\packages\EMGU-CV.3.4.1\lib\Emgu.CV.World.dll</HintPath>
     </Reference>
+    <Reference Include="LumenWorks.Framework.IO, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5ad3ea2f85776344, processorArchitecture=MSIL">
+      <HintPath>..\packages\LumenWorksCsvReader.4.0.0\lib\net461\LumenWorks.Framework.IO.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\EMGU-CV.3.4.1\lib\System.Drawing.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.5.2\lib\netstandard2.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Threading.Tasks.Extensions.4.5.2\lib\netstandard2.0\System.Threading.Tasks.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ValueTuple.4.4.0\lib\net461\System.ValueTuple.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EMGU-CV.3.4.1\lib\System.Windows.Forms.dll</HintPath>
@@ -80,12 +97,9 @@
     <Reference Include="System.Deployment" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="ZedGraph, Version=5.1.7.430, Culture=neutral, PublicKeyToken=02a83cbd123fcd60, processorArchitecture=MSIL">
-      <HintPath>..\packages\ZedGraph.5.1.7\lib\net35-Client\ZedGraph.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DefaultFaceComponentsNormalizer.cs" />
+    <Compile Include="model\DefaultFaceComponentsExtractor.cs" />
     <Compile Include="detector\CascadeFaceDetector.cs" />
     <Compile Include="detector\FaceComponentsDetector.cs" />
     <Compile Include="detector\FaceDector.cs" />
@@ -96,42 +110,37 @@
     <Compile Include="model\extractor\CircularMultiscaleLBP.cs" />
     <Compile Include="model\Face.cs" />
     <Compile Include="detector\FaceLandmarkDetectorLBF.cs" />
-    <Compile Include="model\FaceFeatureDB.cs" />
+    <Compile Include="cbr\FaceFeatureDB.cs" />
+    <Compile Include="model\Photo.cs" />
     <Compile Include="model\Rank.cs" />
-    <Compile Include="performance\TestAccuracy.cs" />
-    <Compile Include="PhotoSketchCBR.cs" />
+    <Compile Include="cbr\PhotoSketchAlgorithm.cs" />
+    <Compile Include="performance\Tests.cs" />
+    <Compile Include="cbr\PhotoSketchCBR.cs" />
+    <Compile Include="performance\TestUtils.cs" />
     <Compile Include="preprocess\FaceNormalizer.cs" />
-    <Compile Include="MainForm.cs">
+    <Compile Include="ui\DashboardCBR.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="MainForm.Designer.cs">
-      <DependentUpon>MainForm.cs</DependentUpon>
+    <Compile Include="ui\DashboardCBR.Designer.cs">
+      <DependentUpon>DashboardCBR.cs</DependentUpon>
     </Compile>
-    <Compile Include="model\CBR.cs" />
     <Compile Include="detector\EyesDetector.cs" />
-    <Compile Include="model\extractor\FeatureExtractor.cs" />
+    <Compile Include="model\FeatureExtractor.cs" />
     <Compile Include="model\FusionStrategy.cs" />
     <Compile Include="detector\HaarEyesDetector.cs" />
     <Compile Include="preprocess\Preprocessing.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="NormalizeDataset.cs" />
-    <Compile Include="ui\controller\CBRController.cs" />
+    <Compile Include="ui\CBRPresenter.cs" />
     <Compile Include="ui\ImageGallery.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="ui\ImageGallery.Designer.cs">
       <DependentUpon>ImageGallery.cs</DependentUpon>
     </Compile>
-    <Compile Include="ui\SettingsForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="ui\SettingsForm.Designer.cs">
-      <DependentUpon>SettingsForm.cs</DependentUpon>
-    </Compile>
     <Compile Include="model\Metrics.cs" />
-    <EmbeddedResource Include="MainForm.resx">
-      <DependentUpon>MainForm.cs</DependentUpon>
+    <EmbeddedResource Include="ui\DashboardCBR.resx">
+      <DependentUpon>DashboardCBR.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -145,9 +154,6 @@
     </Compile>
     <EmbeddedResource Include="ui\ImageGallery.resx">
       <DependentUpon>ImageGallery.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="ui\SettingsForm.resx">
-      <DependentUpon>SettingsForm.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
@@ -167,7 +173,6 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="License-LGPL.txt" />
     <Content Include="resources\haarcascade_eye_tree_eyeglasses.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -176,7 +181,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="utils\" />
+    <Folder Include="resources\dataset\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

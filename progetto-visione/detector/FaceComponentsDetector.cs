@@ -11,6 +11,6 @@ namespace Vision.Detector
 {
     public interface FaceComponentsDetector
     {
-        Tuple<PointF[], Dictionary<FaceComponent, Rectangle>> Fit(IImage image);
+        FaceComponentContainer<Rectangle, PointF[]> Fit(IImage image);
     }
 }

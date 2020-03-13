@@ -9,11 +9,6 @@ using Vision.Detector;
 
 namespace Vision.Model
 {
-    public enum Gender
-    {
-        UNKOWN, MALE, FEMALE
-    };
-
     public enum FaceComponent
     {
         EYES,
@@ -23,34 +18,45 @@ namespace Vision.Model
         HAIR
     }
 
-    public static class Face
+    public static class FaceComponentContainer
     {
-        public static Face<T> FromDictionary<T>(Dictionary<FaceComponent, T> faceComponents, float[] shape)
+        public static FaceComponentContainer<T, S> Create<T, S>(T hair, T eyebrows, T eyes, T nose, T mouth, S shape)
         {
-            return new Face<T>(faceComponents, shape);   
+            return new FaceComponentContainer<T, S>(new Dictionary<FaceComponent, T>()
+            {
+                { FaceComponent.HAIR, hair },
+                { FaceComponent.EYEBROWS, eyebrows },
+                { FaceComponent.EYES, eyes },
+                { FaceComponent.NOSE, nose },
+                { FaceComponent.MOUTH, mouth }
+            }, shape);
         }
-
-        public static Face<T> Empty<T>()
+        public static FaceComponentContainer<T, S> FromDictionary<T,S>(Dictionary<FaceComponent, T> faceComponents, S shape)
         {
-            return new Face<T>(new Dictionary<FaceComponent, T>(), new float[] { });
+            return new FaceComponentContainer<T, S>(faceComponents, shape);   
+        }
+        public static FaceComponentContainer<T, S> Empty<T, S>()
+        {
+            return new FaceComponentContainer<T, S>(new Dictionary<FaceComponent, T>(), default(S));
         }
     }
 
-    public class Face<ComponentType>
+    public class FaceComponentContainer<ComponentType, ShapeType>
     {
         private Dictionary<FaceComponent, ComponentType> components;
-        public Face(Dictionary<FaceComponent, ComponentType> faceComponents, float[] shape)
+        public FaceComponentContainer(Dictionary<FaceComponent, ComponentType> faceComponents, ShapeType shape)
         {
             components = faceComponents;
             Shape = shape;
         }
 
-        public float[] Shape { get; }
-        public ComponentType Eyes { get => components[FaceComponent.EYES]; }
+        public ComponentType Hair { get => components[FaceComponent.HAIR]; }
         public ComponentType Eyebrows { get => components[FaceComponent.EYEBROWS]; }
+        public ComponentType Eyes { get => components[FaceComponent.EYES]; }
         public ComponentType Nose { get => components[FaceComponent.NOSE]; }
         public ComponentType Mouth { get => components[FaceComponent.MOUTH]; }
-        public ComponentType Hair { get => components[FaceComponent.HAIR]; }
+        public ShapeType Shape { get; }
+
         public void SetComponent(FaceComponent component, ComponentType value) => components.Add(component, value);
         public ComponentType GetComponent(FaceComponent component) => components[component];
         
@@ -59,7 +65,7 @@ namespace Vision.Model
     public interface FaceComponentsExtractor
     {
         FaceComponentsDetector Detector { get; }
-        Face<Image<TColor, TDepth>> ExtractComponentsFromImage<TColor, TDepth>(Image<TColor, TDepth> image)
+        FaceComponentContainer<Image<TColor, TDepth>, float[]> ExtractComponentsFromImage<TColor, TDepth>(Image<TColor, TDepth> image)
             where TColor : struct, IColor
             where TDepth : new();
     }

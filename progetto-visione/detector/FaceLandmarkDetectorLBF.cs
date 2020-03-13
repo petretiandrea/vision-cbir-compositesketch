@@ -23,11 +23,8 @@ namespace Vision.Detector
         private static Range NOSE_POINT_RANGE = new Range(28, 35);
         private static Range MOUTH_POINT_RANGE = new Range(48, 67);
 
-        private static Size DEFAULT_PADDING = new Size(10, 0);
-
         private FaceDetector faceDetector;
         private FacemarkLBF facemark;
-        
 
         public FaceLandmarkDetectorLBF(FaceDetector faceDetector, string landmarkModel)
         {
@@ -36,39 +33,34 @@ namespace Vision.Detector
             this.facemark.LoadModel(landmarkModel);
         }
 
-        public Tuple<PointF[], Dictionary<FaceComponent, Rectangle>> Fit(IImage image)
+        public FaceComponentContainer<Rectangle, PointF[]> Fit(IImage image)
         {
             var faces = new VectorOfRect(faceDetector.DetectBoxFaces(image));
             var landmarks = new VectorOfVectorOfPointF();
-
+            
             if (facemark.Fit(image, faces, landmarks))
             {
-                var faceShape = landmarks.ToArrayOfArray().First();
-                var components = ExtractFacialComponentRects(faceShape);
-                components.Add(FaceComponent.HAIR, ExtractHairRectangle(image, components[FaceComponent.EYEBROWS]));
-                return Tuple.Create(faceShape, components);
+                return ExtractFacialComponentRects(image, landmarks.ToArrayOfArray().First());
             }
             return null;
         }
 
-        private Dictionary<FaceComponent, Rectangle> ExtractFacialComponentRects(PointF[] landamarksPoints)
+        private FaceComponentContainer<Rectangle, PointF[]> ExtractFacialComponentRects(IImage image, PointF[] landamarksPoints)
         {
-            return new Dictionary<FaceComponent, Rectangle>()
-            {
-                { FaceComponent.EYES, ExtractRectFromLandmarks(landamarksPoints, EYES_POINT_RANGE, DEFAULT_PADDING) },
-                { FaceComponent.EYEBROWS, ExtractRectFromLandmarks(landamarksPoints, EYEBROWS_POINT_RANGE) },
-                { FaceComponent.NOSE, ExtractRectFromLandmarks(landamarksPoints, NOSE_POINT_RANGE, DEFAULT_PADDING) },
-                { FaceComponent.MOUTH, ExtractRectFromLandmarks(landamarksPoints, MOUTH_POINT_RANGE, DEFAULT_PADDING) }
-            };
+            var eyebrows = ExtractRectFromLandmarks(landamarksPoints, EYEBROWS_POINT_RANGE);
+            var eyes = ExtractRectFromLandmarks(landamarksPoints, EYES_POINT_RANGE);
+            var nose = ExtractRectFromLandmarks(landamarksPoints, NOSE_POINT_RANGE);
+            var mouth = ExtractRectFromLandmarks(landamarksPoints, MOUTH_POINT_RANGE);
+            var hair = ExtractHairRectangle(image, eyebrows);
+            return FaceComponentContainer.Create(hair, eyebrows, eyes, nose, mouth, landamarksPoints);
         }
         
-        private Rectangle ExtractRectFromLandmarks(PointF[] landamarksPoints, Range range, Size padding = default(Size))
+        private Rectangle ExtractRectFromLandmarks(PointF[] landamarksPoints, Range range)
         {
             var points = landamarksPoints.Skip(range.Start)
                 .Take(range.End - range.Start + 1)
                 .ToArray();
             var rect = PointCollection.BoundingRectangle(points);
-            rect.Inflate(padding.Width, padding.Height);
             return rect;
         }
 

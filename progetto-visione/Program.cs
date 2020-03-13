@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Vision.CBR;
 using Vision.Model;
-using Vision.ui.controller;
+using Vision.UI;
 
 namespace Vision
 {
@@ -17,12 +17,17 @@ namespace Vision
         [STAThread]
         static void Main()
         {
-            var cbr = new PhotoSketchCBR();
-            var controller = new PhotoSketchCBRController(cbr);
-
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm(controller));
+
+            var cbr = new PhotoSketchCBR(PhotoSketchAlgorithm.Default);
+            var view = new DashboardCBR();
+            var controller = new PhotoSketchCBRPresenter(view, cbr);
+            
+            Application.Run(view);
+
+            //FaceFeaturesDB db = new FaceFeaturesDB();
+            //FaceFeaturesDB.SaveCSV(db, "ciao.csv");
         }
     }
 }
