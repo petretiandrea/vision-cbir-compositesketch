@@ -37,21 +37,22 @@ namespace Vision.Detector
         {
             var faces = new VectorOfRect(faceDetector.DetectBoxFaces(image));
             var landmarks = new VectorOfVectorOfPointF();
-            
             if (facemark.Fit(image, faces, landmarks))
             {
-                return ExtractFacialComponentRects(image, landmarks.ToArrayOfArray().First());
+                var face = faces.ToArray().First();
+                var boxes = ExtractFacialComponentRects(image, face, landmarks.ToArrayOfArray().First());
+                return boxes;
             }
             return null;
         }
 
-        private FaceComponentContainer<Rectangle, PointF[]> ExtractFacialComponentRects(IImage image, PointF[] landamarksPoints)
+        private FaceComponentContainer<Rectangle, PointF[]> ExtractFacialComponentRects(IImage image, Rectangle face, PointF[] landamarksPoints)
         {
             var eyebrows = ExtractRectFromLandmarks(landamarksPoints, EYEBROWS_POINT_RANGE);
             var eyes = ExtractRectFromLandmarks(landamarksPoints, EYES_POINT_RANGE);
             var nose = ExtractRectFromLandmarks(landamarksPoints, NOSE_POINT_RANGE);
             var mouth = ExtractRectFromLandmarks(landamarksPoints, MOUTH_POINT_RANGE);
-            var hair = ExtractHairRectangle(image, eyebrows);
+            var hair = ExtractHairRectangle(image, face, PointCollection.BoundingRectangle(landamarksPoints));
             return FaceComponentContainer.Create(hair, eyebrows, eyes, nose, mouth, landamarksPoints);
         }
         
@@ -64,10 +65,10 @@ namespace Vision.Detector
             return rect;
         }
 
-        private Rectangle ExtractHairRectangle(IImage image, Rectangle eyebrowsRect)
+        private Rectangle ExtractHairRectangle(IImage image, Rectangle face, Rectangle landmarksBoungingBox)
         {
-            var hairHeight = image.Size.Height - (image.Size.Height - eyebrowsRect.Top);
-            return new Rectangle(0, 0, image.Size.Width, hairHeight);
+            var hairHeight = image.Size.Height - (image.Size.Height - landmarksBoungingBox.Top);
+            return new Rectangle(face.X, 0, face.Width, hairHeight);
         }
     }
 }

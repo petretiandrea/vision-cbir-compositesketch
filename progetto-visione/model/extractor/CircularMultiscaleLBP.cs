@@ -12,13 +12,14 @@ namespace Vision.Model.Extractor
 {
     public class CircularMultiscaleLBP : MultiscaleLBP
     {
-        public static MultiscaleLBP Create(params int[] multiscaleRadius) => new CircularMultiscaleLBP(multiscaleRadius);
+        public static MultiscaleLBP Create(params float[] multiscaleRadius) => new CircularMultiscaleLBP(multiscaleRadius.Select(r => Tuple.Create(r, CircularLBP.DEFAULT_NEIGHBORS_FACTOR)).ToArray());
+        public static MultiscaleLBP Create(params Tuple<float, int>[] radiusNeighborPairs) => new CircularMultiscaleLBP(radiusNeighborPairs);
 
         private LBP[] lbps;
 
-        protected CircularMultiscaleLBP(params int[] multiscaleRadius)
+        protected CircularMultiscaleLBP(Tuple<float, int>[] radiusNeighborPairs)
         {
-            this.lbps = multiscaleRadius.Select(radius => new CircularLBP(radius)).ToArray();
+            this.lbps = radiusNeighborPairs.Select(radiusNeigh => CircularLBP.Create(radiusNeigh.Item1, radiusNeigh.Item2)).ToArray();
         }
         
         public Image<Gray, byte>[] Apply<TColor, TDepth>(Image<TColor, TDepth> image) where TColor : struct, IColor where TDepth : new()

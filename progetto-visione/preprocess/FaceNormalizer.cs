@@ -23,7 +23,7 @@ namespace Vision.Preprocess
 
         /// percentage that control how much of the face is visible
         private const double DESIDERED_LEFT_EYE_X = 0.35;
-        private const double DESIDERED_LEFT_EYE_Y = 0.4;
+        private const double DESIDERED_LEFT_EYE_Y = 0.5;
 
         public PreprocessFaceNormalizer(EyesDetector eyesDector)
         {

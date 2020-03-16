@@ -11,14 +11,38 @@ namespace Vision.Model.Extractor
 {
     public abstract class AbstractLBPFeatureExtractor : AbstractFeatureExtrator
     {
-        public int NumberOfCell { get; private set; }
+        public int Size { get; private set; }
+        public int Stride { get; private set; }
 
-        public AbstractLBPFeatureExtractor(int numberOfCell)
+        public AbstractLBPFeatureExtractor(int size, int stride)
         {
-            this.NumberOfCell = numberOfCell;
+            this.Size = size;
+            this.Stride = stride;
         }
 
-        protected Rectangle[] ComputePatches<TColor, TDepth>(Image<TColor, TDepth> img, int k)
+        protected Rectangle[] ComputePatches<TColor, TDepth>(Image<TColor, TDepth> img, int size, int stride)
+            where TColor : struct, IColor
+            where TDepth : new()
+        {
+            var n = (img.Width - size) / stride + 1;
+            var m = (img.Height - size) / stride + 1;
+            var rectangles = new List<Rectangle>(n * m);
+            for (int i = 0; i < m; i++)
+            {
+                for (int j = 0; j < n; j++)
+                {
+                    var r = new Rectangle(
+                        j * stride,
+                        i * stride,
+                        size,
+                        size);
+                    rectangles.Add(r);
+                }
+            }
+            return rectangles.ToArray();
+        }
+
+        /*protected Rectangle[] ComputePatches<TColor, TDepth>(Image<TColor, TDepth> img, int k)
             where TColor : struct, IColor
             where TDepth : new()
         {
@@ -38,25 +62,26 @@ namespace Vision.Model.Extractor
                 patches[i] = r;
             }
             return patches;
-        }
+        }*/
     }
 
     public class LBPFeatureExtractor : AbstractLBPFeatureExtractor
     {
         private LBP lbp;
-        public LBPFeatureExtractor(LBP lbp, int numberOfCell) : base(numberOfCell) {
+        public LBPFeatureExtractor(LBP lbp, int size, int stride) : base(size, stride) {
             this.lbp = lbp;
         }
 
         public override float[] ExtractDescriptor<TColor, TDepth>(Image<TColor, TDepth> image)
         {
-            var lbpImage = lbp.Apply(image);
-            var patches = ComputePatches(lbpImage, NumberOfCell);
-            return patches
-                .Select(patch => lbpImage.GetSubRect(patch))
-                .Select(imgPatch => LBPUtils.CalculateHistogramFromLBP(imgPatch.Convert<Gray, byte>()))
-                .SelectMany(hist => hist)
-                .ToArray();
+            /* var lbpImage = lbp.Apply(image);
+             var patches = ComputePatches(lbpImage, NumberOfCell);
+             return patches
+                 .Select(patch => lbpImage.GetSubRect(patch))
+                 .Select(imgPatch => LBPUtils.CalculateHistogramFromLBP(imgPatch.Convert<Gray, byte>()))
+                 .SelectMany(hist => hist)
+                 .ToArray();*/
+            return null;
         }
     }
 
@@ -64,16 +89,16 @@ namespace Vision.Model.Extractor
     {
         private MultiscaleLBP lbp;
 
-        public MLBPFeatureExtractor(MultiscaleLBP lbp, int numberOfCell) : base(numberOfCell)
+        public MLBPFeatureExtractor(MultiscaleLBP lbp, int size, int stride) : base(size, stride)
         {
             this.lbp = lbp;
         }
-
+        
         public override float[] ExtractDescriptor<TColor, TDepth>(Image<TColor, TDepth> image)
         {
             var multiscaleImages = lbp.Apply(image);
 
-            var patches = ComputePatches(image, NumberOfCell);
+            var patches = ComputePatches(image, Size, Stride);
             return patches
                 .Select(patch => multiscaleImages.Select(lbpImage => lbpImage.GetSubRect(patch)).ToArray())
                 .Select(multiscalePatches => LBPUtils.CalculateHistogramFromMLBP(multiscalePatches))

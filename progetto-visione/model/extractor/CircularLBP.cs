@@ -8,16 +8,34 @@ using Emgu.CV.Structure;
 
 namespace Vision.Model.Extractor
 {
+    public enum Method
+    {
+        DEFAULT,
+        UNIFORM
+    }
+
     public class CircularLBP : LBP
     {
-        private const int DEFAULT_NEIGHBORS_FACTOR = 8;
+        public const int DEFAULT_NEIGHBORS_FACTOR = 8;
         public float Radius { get; private set; }
         public int Neighbors { get; private set; }
+        public Method Method { get; private set; }
 
-        public CircularLBP(float radius, int neighbors = -1)
+        public static CircularLBP Create(float radius)
+        {
+            return new CircularLBP(radius, DEFAULT_NEIGHBORS_FACTOR * (int) radius);
+        }
+
+        public static CircularLBP Create(float radius, int neighbors)
+        {
+            return new CircularLBP(radius, neighbors);
+        }
+
+        protected CircularLBP(float radius, int neighbors, Method method = default(Method))
         {
             this.Radius = radius;
-            this.Neighbors = NormalizeNeighborPoints(radius, neighbors);
+            this.Neighbors = neighbors <= 32 ? neighbors : throw new ArgumentException("Max supported neighbors is 64");
+            this.Method = method;
         }
 
         public Image<Gray, byte> Apply<TColor, TDepth>(Image<TColor, TDepth> image)
@@ -85,11 +103,6 @@ namespace Vision.Model.Extractor
             var rowCirc = Enumerable.Range(0, points).Select(n => -radius * Math.Sin(2 * Math.PI * n / (float)points)).Select(row => Math.Round(row, 5)).ToArray();
             var colCirc = Enumerable.Range(0, points).Select(n => radius * Math.Cos(2 * Math.PI * n / (float)points)).Select(col => Math.Round(col, 5)).ToArray();
             return Tuple.Create(rowCirc, colCirc);
-        }
-
-        private int NormalizeNeighborPoints(float radius, int neighbors)
-        {
-            return (neighbors > 0 && neighbors < 33) ? neighbors : DEFAULT_NEIGHBORS_FACTOR * (int)radius;
         }
     }
 }

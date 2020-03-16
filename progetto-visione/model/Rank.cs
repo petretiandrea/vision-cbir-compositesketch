@@ -14,11 +14,21 @@ namespace Vision.Model
         public Rank<T, S> NormalizeScore(Func<S[], Func<S, S>> normalizeFunction)
         {
             var scoreNormFunction = normalizeFunction(this.Select(r => r.Item2).ToArray());
-            for(int i = 0; i < this.Count; i++)
+            var newRank = this.Select(item =>
+            {
+                return Tuple.Create(item.Item1, scoreNormFunction(item.Item2));
+            })
+                .OrderByDescending(item => item.Item2)
+                .ToRank();
+
+            this.Clear();
+            this.AddRange(newRank);
+            return this;
+            /*for(int i = 0; i < this.Count; i++)
             {
                 this[i] = Tuple.Create(this[i].Item1, scoreNormFunction(this[i].Item2));
             }
-            return this;
+            return this;*/
         }
     }
 

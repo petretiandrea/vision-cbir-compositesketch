@@ -15,9 +15,9 @@ namespace Vision.performance
 {
     public static class Tests
     {
-        private static string GALLERY_CSV = @"C:\Users\Petreti Andrea\Desktop\progetto-visione\dataset\photo_gallery.csv";
-        private static string SKETCHS_CSV = @"C:\Users\Petreti Andrea\Desktop\progetto-visione\dataset\cuhk\cuhk_sketches\dataset.csv";
-        private static string TEST_DB = @"db3.csv";
+        private static string GALLERY_CSV = @"C:\Users\Petreti Andrea\Desktop\progetto-visione\dataset\photo_gallery\photo_gallery_ar_meds.csv";
+        private static string SKETCHS_CSV = @"C:\Users\Petreti Andrea\Desktop\progetto-visione\dataset\sketches\epirip\dataset.csv";
+        private static string TEST_DB = @"C:\Users\Petreti Andrea\Desktop\progetto-visione\dataset\photo_gallery\features-1584388093062.csv";
 
         private static int[] RANKS = Enumerable.Range(1, 100).ToArray();
 
@@ -27,15 +27,15 @@ namespace Vision.performance
         {
             var db = new FaceFeaturesDB();
             var photos = PhotoMetadataCsv.FromCSV(GALLERY_CSV).ToList();
-            var sketches = TestSketchMetadataCsv.FromCSV(SKETCHS_CSV).ToList();
 
             Console.WriteLine("Extracting Features....");
-
+        
+           
             photos.ForEach(photo =>
             {
                 try
                 {
-                    var feature = Algorithm.ExtractFaceFeatures(photo.Path);
+                    var feature = Algorithm.ExtractFaceFeatures(photo.AbsolutePath);
                     db.AddPhotoFeatures(photo, feature);
                 }
                 catch (ArgumentException) { }
@@ -46,14 +46,17 @@ namespace Vision.performance
             });
 
             var dbName = string.Format("features-{0}.csv", DateTimeOffset.Now.ToUnixTimeMilliseconds());
-            FaceFeaturesDBDumper.SaveCSV(dbName, db);
-            Console.WriteLine("Feature Extracted! Saved on: {0}", dbName);
+            if(db.Dump(dbName)) {
+                 Console.WriteLine("Feature Extracted! Saved on: {0}", dbName);
+            }
+
+            TestAccuracy(db);
         }
 
-        public static void TestAccuracy()
+        public static void TestAccuracy(FaceFeaturesDB featuresDb = null)
         {
-            var sketches = TestSketchMetadataCsv.FromCSV(SKETCHS_CSV).ToList();
-            var gallery = FaceFeaturesDBDumper.ReadCSV(TEST_DB);
+            var sketches = PhotoMetadataCsv.FromCSV(SKETCHS_CSV).ToList();
+            var gallery = featuresDb == null ? FaceFeaturesDB.FromDump(TEST_DB) : featuresDb;
             var gallerySize = gallery.Entries.Length;
             
             var cbr = new PhotoSketchCBR(Algorithm);
@@ -63,21 +66,26 @@ namespace Vision.performance
             var accuracies = new double[RANKS.Length];
             var maxRank = RANKS.Max();
 
-            var speed = TestSpeed(() =>
+            /*var speed = TestSpeed(() =>
             {
                 sketches.Take(5).ToList().ForEach(sketch =>
                 {
-                    var rank = cbr.Search(sketch.Path, sketch.Gender, maxRank);
+                    var rank = cbr.Search(sketch.AbsolutePath, sketch.Gender, maxRank);
                 });
-            });
+            });*/
 
-            foreach (var sketch in sketches)
+            var any = gallery.Entries.Any(t => t.Item1.Id == sketches[0].Id);
+
+             foreach (var sketch in sketches)
             {
-                var rank = cbr.Search(sketch.Path, sketch.Gender, maxRank);
-                for(int i = 0; i < RANKS.Length; i++)
+                try
                 {
-                    accuracies[i] += rank.Take(RANKS[i]).Any(t => t.Item1.Path == sketch.Ground) ? 1 : 0;
-                }
+                    var rank = cbr.Search(sketch.AbsolutePath, Gender.UNKNOWN/*sketch.Gender*/, maxRank);
+                    for (int i = 0; i < RANKS.Length; i++)
+                    {
+                        accuracies[i] += rank.Take(RANKS[i]).Any(t => t.Item1.Id == sketch.Id) ? 1 : 0;
+                    }
+                } catch(ArgumentException e){ }
             }
 
             using(var csv = new StreamWriter("rank_performance.csv"))
@@ -96,8 +104,35 @@ namespace Vision.performance
         
         static void Main()
         {
-            //ExtractFeaturesDB();
-            TestAccuracy();
+            ExtractFeaturesDB();
+            //TestAccuracy();
+        }
+
+        private static void TestSingleComponents()
+        {
+           /* var sketches = PhotoMetadataCsv.FromCSV(SKETCHS_CSV).ToList();
+            var gallery = FaceFeaturesDB.FromDump(TEST_DB);
+            var gallerySize = gallery.Entries.Length;
+
+            var cbr = new PhotoSketchCBR(Algorithm);
+
+            cbr.Database = gallery;
+
+            var accuracies = new double[6, RANKS.Length];
+            var maxRank = RANKS.Max();
+
+            foreach (var sketch in sketches)
+            {
+                try
+                {
+                    var rank = cbr.Search(sketch.AbsolutePath, Gender.UNKNOWN, maxRank);
+                    for (int i = 0; i < RANKS.Length; i++)
+                    {
+                        accuracies[i] += rank.Take(RANKS[i]).Any(t => t.Item1.Id == sketch.Id) ? 1 : 0;
+                    }
+                }
+                catch (ArgumentException e) { }
+            }*/
         }
     }
 }

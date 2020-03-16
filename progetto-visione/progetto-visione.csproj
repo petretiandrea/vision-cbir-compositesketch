@@ -139,6 +139,7 @@
       <DependentUpon>ImageGallery.cs</DependentUpon>
     </Compile>
     <Compile Include="model\Metrics.cs" />
+    <Compile Include="Utils.cs" />
     <EmbeddedResource Include="ui\DashboardCBR.resx">
       <DependentUpon>DashboardCBR.cs</DependentUpon>
     </EmbeddedResource>

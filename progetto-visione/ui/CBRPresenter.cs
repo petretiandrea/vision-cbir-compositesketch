@@ -54,8 +54,8 @@ namespace Vision.UI
             {
                 // background work computer a search
                 var rank = CBR.Search(sketchPath, gender, rankSize);
-                var images = rank.Select(r => r.Item1.Path).ToArray();
-                var labels = rank.Select(r => string.Format("Name: {0}, Gender: {1}, Score: {2}", r.Item1.Path, r.Item1.Gender, r.Item2).ToArray());
+                var images = rank.Select(r => r.Item1.AbsolutePath).ToArray();
+                var labels = rank.Select(r => string.Format("Name: {0}, Gender: {1}, Score: {2}", r.Item1.AbsolutePath, r.Item1.Gender, r.Item2).ToArray());
                 e.Result = Tuple.Create(images, labels);
             };
             searchTask.RunWorkerCompleted += SearchCompleted;
@@ -75,7 +75,7 @@ namespace Vision.UI
         {
             if (databaseTask != null && databaseTask.IsBusy) return;
             databaseTask = new BackgroundWorker();
-            databaseTask.DoWork += (s, e) => e.Result = FaceFeaturesDBDumper.ReadCSV(databaseFilename);
+            databaseTask.DoWork += (s, e) => e.Result = FaceFeaturesDBSerializer.ReadCSV(databaseFilename);
             databaseTask.RunWorkerCompleted += (s, e) => { CBR.Database = e.Result as FaceFeaturesDB; View.BackgroundLoading = false; };
             View.BackgroundLoading = true;
             View.LoadingLabel = "Loading photo database...";

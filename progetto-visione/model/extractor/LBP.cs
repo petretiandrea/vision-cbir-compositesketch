@@ -27,9 +27,11 @@ namespace Vision.Model.Extractor
     {
         public static float[] CalculateHistogramFromLBP(Image<Gray, byte> image)
         {
+            var norm = image.Width * image.Height;
             using (var hist = new DenseHistogram(256, new RangeF(0, 256)))
             {
                 hist.Calculate(new Image<Gray, byte>[] { image }, false, null);
+                //var h  =hist.GetBinValues().Select(v => v / norm).ToArray();
                 return hist.GetBinValues();
             }
         }
@@ -45,8 +47,8 @@ namespace Vision.Model.Extractor
         {
             if (features1.Length != features2.Length) throw new ArgumentException("The features vector must be to same length");
 
-            var featuresChunckLength = features1.Length / (numberOfPatch * numberOfPatch);
-            return Enumerable.Range(0, (numberOfPatch * numberOfPatch))
+            var featuresChunckLength = features1.Length /  numberOfPatch;
+            return Enumerable.Range(0, numberOfPatch)
                 .AsParallel()
                 .Select(cellIndex => new
                 {

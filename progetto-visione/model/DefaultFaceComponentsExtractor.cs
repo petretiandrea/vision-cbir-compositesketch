@@ -13,28 +13,27 @@ using Vision.Detector;
 
 namespace Vision.Model
 {
-    struct FaceComponentParams
+    public struct BoundingBoxParam
     {
         public double AspectRatio { get; set; }
-        public int UpscaleWidth { get; set; }
+        public int TargetWidth { get; set; }
     }
 
-    public class DefaultFaceComponentsExtractor : FaceComponentsExtractor
+    public class PhotoSketchFaceComponentsExtractor : FaceComponentsExtractor
     {
-        private readonly Dictionary<FaceComponent, FaceComponentParams> NORMALIZE_PARAMS = new Dictionary<FaceComponent, FaceComponentParams>()
-        {
-            { FaceComponent.EYES, new FaceComponentParams { AspectRatio = 0.3, UpscaleWidth = 300 }  },
-            { FaceComponent.EYEBROWS, new FaceComponentParams { AspectRatio = 0.15, UpscaleWidth = 320 }  },
-            { FaceComponent.MOUTH, new FaceComponentParams { AspectRatio = 0.6, UpscaleWidth = 200 }  },
-            { FaceComponent.NOSE, new FaceComponentParams { AspectRatio = 1.0, UpscaleWidth = 120 } },
-            { FaceComponent.HAIR, new FaceComponentParams { AspectRatio = 0.35, UpscaleWidth = 150 } }
-        };
-
         public FaceComponentsDetector Detector { get; private set; }
+        private Dictionary<FaceComponent, BoundingBoxParam> boundingBoxParams;
 
-        public DefaultFaceComponentsExtractor(FaceComponentsDetector detector)
+        public PhotoSketchFaceComponentsExtractor(FaceComponentsDetector detector, BoundingBoxParam hair, BoundingBoxParam eyebrows, 
+            BoundingBoxParam eyes, BoundingBoxParam nose, BoundingBoxParam mouth)
         {
             Detector = detector;
+            boundingBoxParams = new Dictionary<FaceComponent, BoundingBoxParam>();
+            boundingBoxParams[FaceComponent.HAIR] = hair;
+            boundingBoxParams[FaceComponent.EYEBROWS] = eyebrows;
+            boundingBoxParams[FaceComponent.EYES] = eyes;
+            boundingBoxParams[FaceComponent.NOSE] = nose;
+            boundingBoxParams[FaceComponent.MOUTH] = mouth;
         }
 
         public FaceComponentContainer<Image<TColor, TDepth>, float[]> ExtractComponentsFromImage<TColor, TDepth>(Image<TColor, TDepth> image)
@@ -43,7 +42,7 @@ namespace Vision.Model
         {
             if (image == null) return FaceComponentContainer.Empty<Image<TColor, TDepth>, float[]>();
             var faceComponentBoxes = Detector.Fit(image);
-            var subImages = NORMALIZE_PARAMS
+            var subImages = boundingBoxParams
                 .Select(kv => new { kv.Key, Value = ExtractSubImage(image, faceComponentBoxes.GetComponent(kv.Key), kv) })
                 .ToDictionary(tuple => tuple.Key, tuple => tuple.Value);
 
@@ -51,13 +50,17 @@ namespace Vision.Model
             return FaceComponentContainer.FromDictionary(subImages, shape);
         }
 
-        private Image<TColor, TDepth> ExtractSubImage<TColor, TDepth>(Image<TColor, TDepth> image, Rectangle boundingBox, KeyValuePair<FaceComponent, FaceComponentParams> normParams)
+        private Image<TColor, TDepth> ExtractSubImage<TColor, TDepth>(Image<TColor, TDepth> image, Rectangle boundingBox, KeyValuePair<FaceComponent, BoundingBoxParam> normParams)
             where TColor : struct, IColor
             where TDepth : new()
         {
             var normBoundingBox = normParams.Key == FaceComponent.HAIR ?
                 NormalizeHairAspectRatio(image, boundingBox) : 
                 NormalizeAspectRatio(boundingBox, normParams.Value.AspectRatio);
+
+            /*var i = image as Image<Gray, byte>;
+            i.Draw(normBoundingBox, new Gray(0), 1);
+            ImageViewer.Show(i);*/
             try
             {
                 var resizedImage = ResizeFromParams(image.GetSubRect(normBoundingBox), normParams.Value);
@@ -75,23 +78,35 @@ namespace Vision.Model
             where TColor : struct, IColor
             where TDepth : new()
         {
-            var hairNormParams = NORMALIZE_PARAMS[FaceComponent.HAIR];
+            var hairNormParams = boundingBoxParams[FaceComponent.HAIR];
+            var targetHeight = (int) Math.Floor(hairRect.Width * hairNormParams.AspectRatio);
+            var padding = hairRect.Height - targetHeight;
+            if(padding < 0)
+            {
+                var a = new Rectangle(hairRect.Left, hairRect.Top, hairRect.Width, targetHeight + (-padding));
+                /*var i = image as Image<Gray, byte>;
+                i.Draw(a, new Gray(255), 1);
+                ImageViewer.Show(i);*/
+                return a;
+            }
+            return new Rectangle(hairRect.X, hairRect.Top + padding, hairRect.Width, targetHeight);
+            /*
             var excessHeight = (int) Math.Floor((image.Width * hairNormParams.AspectRatio) - hairRect.Height);
-            hairRect.Height += excessHeight;
+            hairRect.Height += excessHeight;*
             
             /*var color = image.Convert<Bgr, byte>();   
             color.Draw(hairRect, new Bgr(0, 255, 0));
             ImageViewer.Show(color);*/
 
-            return hairRect;
+            //return hairRect;
         }
 
-        private Image<TColor, TDepth> ResizeFromParams<TColor, TDepth>(Image<TColor, TDepth> image, FaceComponentParams param)
+        private Image<TColor, TDepth> ResizeFromParams<TColor, TDepth>(Image<TColor, TDepth> image, BoundingBoxParam param)
             where TColor : struct, IColor
             where TDepth : new()
         {
-            var targetHeigth = (int) Math.Floor(param.UpscaleWidth * param.AspectRatio);
-            return image.Resize(param.UpscaleWidth, targetHeigth, Emgu.CV.CvEnum.Inter.Cubic);
+            var targetHeigth = (int) Math.Floor(param.TargetWidth * param.AspectRatio);
+            return image.Resize(param.TargetWidth, targetHeigth, Emgu.CV.CvEnum.Inter.Cubic);
         }
 
         private Rectangle NormalizeAspectRatio(Rectangle rect, double aspectRatio = 1)

@@ -45,15 +45,15 @@ namespace Vision.CBR
             var ranks = new Rank<PhotoMetadata, double>[6];
 
             Task.WaitAll(
-                Task.Run(() => ranks[0] = MakeComponentRank(Database.FeaturesHair(gender), sketchFeature.Hair, photoSketchAlgo.Options.HairPatches)),
-                Task.Run(() => ranks[1] = MakeComponentRank(Database.FeaturesEyebrows(gender), sketchFeature.Eyebrows, photoSketchAlgo.Options.EyeBrowsPatches)),
-                //Task.Run(() => ranks[2] = MakeComponentRank(Database.FeaturesEyes(gender), sketchFeature.Eyes, photoSketchAlgo.Options.EyesPatches)),
-                Task.Run(() => ranks[3] = MakeComponentRank(Database.FeaturesNose(gender), sketchFeature.Nose, photoSketchAlgo.Options.NosePatches)),
-                Task.Run(() => ranks[4] = MakeComponentRank(Database.FeaturesMouth(gender), sketchFeature.Mouth, photoSketchAlgo.Options.MouthPatches)),
+                Task.Run(() => ranks[0] = MakeComponentRank(Database.FeaturesHair(gender), sketchFeature.Hair, photoSketchAlgo.Options.Hair.TotalPatch)),
+                Task.Run(() => ranks[1] = MakeComponentRank(Database.FeaturesEyebrows(gender), sketchFeature.Eyebrows, photoSketchAlgo.Options.EyeBrows.TotalPatch)),
+                //Task.Run(() => ranks[2] = MakeComponentRank(Database.FeaturesEyes(gender), sketchFeature.Eyes, photoSketchAlgo.Options.Eyes.TotalPatch)),
+                Task.Run(() => ranks[3] = MakeComponentRank(Database.FeaturesNose(gender), sketchFeature.Nose, photoSketchAlgo.Options.Nose.TotalPatch)),
+                Task.Run(() => ranks[4] = MakeComponentRank(Database.FeaturesMouth(gender), sketchFeature.Mouth, photoSketchAlgo.Options.Mouth.TotalPatch))
                 //Task.Run(() => ranks[5] = Rank.FromMetric(Database.FeaturesShape(gender), sketchFeature.Shape, SHAPE_METRIC).NormalizeScore(ScoreNormalization.Tanh))
                 );
             
-            return SearchFusionStrategy.Fusion(ranks[0], ranks[1], /*ranks[2],*/ ranks[3], ranks[4]/*, ranks[5]*/).Take(maxImageToRetrive).ToRank();
+            return SearchFusionStrategy.Fusion(ranks[0], ranks[1]/*, ranks[2]*/, ranks[3], ranks[4]/*, ranks[5]*/).Take(maxImageToRetrive).ToRank();
         }
         
         private Rank<PhotoMetadata, double> MakeComponentRank(Tuple<PhotoMetadata, float[]>[] dbFeatures, float[] features, int numberOfPatch)

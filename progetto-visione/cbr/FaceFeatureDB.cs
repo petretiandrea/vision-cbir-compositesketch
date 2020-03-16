@@ -31,36 +31,52 @@ namespace Vision.Model
             var genderFiltered = gender == Gender.UNKNOWN ? memoryDb : memoryDb.Where(tuple => tuple.Key.Gender == Gender.UNKNOWN || tuple.Key.Gender == gender);
             return genderFiltered.Select(tuple => Tuple.Create(tuple.Key, map(tuple.Value))).ToArray();
         }
+
+
+        public static FaceFeaturesDB FromDump(string csvFilename)
+        {
+            return FaceFeaturesDBSerializer.ReadCSV(csvFilename);
+        }
+
+        public bool Dump(string csvFilename)
+        {
+            try {
+                FaceFeaturesDBSerializer.SaveCSV(csvFilename, this);
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }
     }
 
-    public static class FaceFeaturesDBDumper
+    static class FaceFeaturesDBSerializer
     {
         private static List<string> columnNames = new List<string> {
             "Id", "Path", "Gender", "FeaturesHair", "FeaturesEyebrows", "FeaturesEyes", "FeaturesNose", "FeaturesMouth", "FeaturesShape"
         };
 
-        public static void SaveCSV(string filename, FaceFeaturesDB face, string delim = ",")
+        public static void SaveCSV(string csvFile, FaceFeaturesDB face, string delim = ",")
         {
-            using (var writer = new StreamWriter(filename))
+            using (var writer = new StreamWriter(csvFile))
             {
                 writer.WriteLine(string.Join(delim, columnNames));
                 foreach (var entry in face.Entries)
                 {
+                    var metadata = string.Join(delim, PhotoMetadataCsv.Serializer(entry.Item1, Path.GetFullPath(csvFile)));
                     writer.Write(string.Join(delim,
-                        entry.Item1.Id, 
-                        Path.GetFileName(entry.Item1.Path),
-                        entry.Item1.Gender,
-                        Escape(string.Join(",", entry.Item2.Hair)),
-                        Escape(string.Join(",", entry.Item2.Eyebrows)),
-                        Escape(string.Join(",", entry.Item2.Eyes)),
-                        Escape(string.Join(",", entry.Item2.Nose)),
-                        Escape(string.Join(",", entry.Item2.Mouth)),
-                        Escape(string.Join(",", entry.Item2.Shape))
+                        metadata,
+                        Escape(string.Join(";", entry.Item2.Hair)),
+                        Escape(string.Join(";", entry.Item2.Eyebrows)),
+                        Escape(string.Join(";", entry.Item2.Eyes)),
+                        Escape(string.Join(";", entry.Item2.Nose)),
+                        Escape(string.Join(";", entry.Item2.Mouth)),
+                        Escape(string.Join(";", entry.Item2.Shape))
                     ));
                     writer.WriteLine();
                 }
                 writer.Flush();
-                writer.Close();}
+                writer.Close();
+            }
         }
         
         public static FaceFeaturesDB ReadCSV(string filename, string delim = ",")
@@ -71,9 +87,7 @@ namespace Vision.Model
                 var headers = csvreader.GetFieldHeaders();
                 while(csvreader.ReadNextRecord())
                 {
-                    var id = int.Parse(csvreader[0]);
-                    var path = csvreader[1];
-                    var gender = (Gender)Enum.Parse(typeof(Gender), csvreader[2]);
+                    var metdata = PhotoMetadataCsv.Deserializer(filename, csvreader);
                     var features = FaceComponentContainer.Create(
                         ParseEscapedVector(csvreader[3]),
                         ParseEscapedVector(csvreader[4]),
@@ -82,7 +96,7 @@ namespace Vision.Model
                         ParseEscapedVector(csvreader[7]),
                         ParseEscapedVector(csvreader[8])
                     );
-                    db.AddPhotoFeatures(new PhotoMetadata(id, path, gender), features);
+                    db.AddPhotoFeatures(metdata, features);
                 }
             }
             return db;
@@ -92,7 +106,7 @@ namespace Vision.Model
         {
             return vector.Trim()
                 .Replace("\"", "")
-                .Split(',')
+                .Split(';')
                 .Select(v => float.Parse(v))
                 .ToArray();
         }
