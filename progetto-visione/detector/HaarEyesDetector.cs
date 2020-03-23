@@ -16,14 +16,17 @@ namespace Vision.Detector
         {
             classifier = new CascadeClassifier(haarEyesModel);
         }
-
+        private readonly object syncLock = new object();
         public Eyes DetectEyes(IImage image)
         {
-            var facesRect = classifier.DetectMultiScale(image, 1.1, 3);
-            //Console.WriteLine("Eyes Detected: " + facesRect.Length);
-            if (facesRect.Length < 2) throw new ArgumentException("The image does not contains a face or the detector cannot"); ;
+            lock(syncLock)
+            {
+                var facesRect = classifier.DetectMultiScale(image, 1.1, 3);
+                //Console.WriteLine("Eyes Detected: " + facesRect.Length);
+                if (facesRect.Length < 2) throw new ArgumentException("The image does not contains a face or the detector cannot");
 
-            return FindBestCandidateEyes(facesRect);
+                return FindBestCandidateEyes(facesRect);
+            }
         }
 
         private Eyes FindBestCandidateEyes(Rectangle[] rects)
@@ -46,16 +49,6 @@ namespace Vision.Detector
             if(candidate.Count == 0) throw new ArgumentException("The image does not contains a face or the detector cannot");
             var maxYdelta = candidate.Select(e => Math.Abs(e.Left.Y - e.Right.Y)).Max();
             return candidate.OrderByDescending(e => maxYdelta - Math.Abs(e.Left.Y - e.Right.Y) + Math.Abs(e.Left.X - e.Right.X)).First();
-        }
-
-        private Eyes BiggerBox(Rectangle[] rects)
-        {
-            // find the two bigger box
-            var eyes = rects.Select((box, index) => new { box, index })
-                .OrderByDescending(item => item.box.Width * item.box.Height)
-                .Take(2)
-                .ToArray();
-            return CreateEyesFromRects(eyes[0].box, eyes[1].box);
         }
 
         private Eyes CreateEyesFromRects(Rectangle r1, Rectangle r2)

@@ -1,5 +1,5 @@
-﻿using CsvHelper;
-using CsvHelper.Configuration;
+﻿
+using LumenWorks.Framework.IO.Csv;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -18,15 +18,17 @@ namespace Vision.Model
 
     public class PhotoMetadata
     {
-        public int Id { get; set; }
-        public string Path { get;  set; }
-        public Gender Gender { get;  set; }
+        public string Id { get; private set; }
+        public Gender Gender { get; private set; }
+        public string DatasetPath { get; private set; }
+        public string AbsolutePath { get; private set; }
 
-        public PhotoMetadata(int id, string path, Gender gender)
+        public PhotoMetadata(string id, Gender gender, string datasetPath, string absolutePath)
         {
             Id = id;
-            Path = path ?? throw new ArgumentNullException(nameof(path));
             Gender = gender;
+            DatasetPath = datasetPath;
+            AbsolutePath = absolutePath ?? throw new ArgumentNullException(nameof(absolutePath));
         }
 
         public override bool Equals(object obj)
@@ -48,20 +50,35 @@ namespace Vision.Model
 
     public static class PhotoMetadataCsv
     {
+
         public static List<PhotoMetadata> FromCSV(string csvFile, bool useCsvPath = true)
         {
-            using (var reader = new StreamReader(csvFile))
-            using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+            using (var reader = new CsvReader(new StreamReader(csvFile), true))
             {
-                csv.Configuration.PrepareHeaderForMatch = (string header, int index) => header.ToLower();
-                var photos = csv.GetRecords<PhotoMetadata>().ToList();
-                if(useCsvPath)
+                var photos = new List<PhotoMetadata>();
+                reader.GetFieldHeaders();
+                while (reader.ReadNextRecord())
                 {
-                    var csvRoot = Path.GetDirectoryName(csvFile);
-                    return photos.Select(p => new PhotoMetadata(p.Id, Path.Combine(csvRoot, p.Path), p.Gender)).ToList();
+                    photos.Add(Deserializer(csvFile, reader));
                 }
                 return photos;
             }
         }
+
+        public static Func<string, CsvReader, PhotoMetadata> Deserializer = (filename, columns) =>
+        {
+            var absolute = Path.Combine(Path.GetDirectoryName(filename), columns[2]).Replace("/", @"\");
+            return new PhotoMetadata(columns[0], Utils.ParseEnum<Gender>(columns[1]), columns[2], absolute);
+        };
+
+        public static Func<PhotoMetadata, string, string[]> Serializer = (photo, filename) =>
+        {
+            return new string[]
+            {
+                photo.Id,
+                Enum.GetName(typeof(Gender), photo.Gender),
+                photo.DatasetPath
+            };
+        };
     }
 }

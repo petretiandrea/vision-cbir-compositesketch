@@ -11,26 +11,26 @@ using System.Drawing;
 using Vision.Model;
 using Vision.Detector;
 
-namespace Vision.Preprocess
+namespace Vision.Normalization
 {
     /// <summary>
     /// Pre-processing purpose. Detect a face into photo and scale, cut and rotate it.
     /// The rotation is based on horizon line of the eyes.
     /// </summary>
-    public class PreprocessFaceNormalizer
+    public class FaceNormalizer
     {
         private EyesDetector eyesDector;
 
         /// percentage that control how much of the face is visible
         private const double DESIDERED_LEFT_EYE_X = 0.35;
-        private const double DESIDERED_LEFT_EYE_Y = 0.4;
+        private const double DESIDERED_LEFT_EYE_Y = 0.5;
 
-        public PreprocessFaceNormalizer(EyesDetector eyesDector)
+        public FaceNormalizer(EyesDetector eyesDector)
         {
             this.eyesDector = eyesDector;
         }
 
-        public Image<Gray, TDepth> Normalize<TDepth>(Image<Bgr, TDepth> originalImage, int targetWidth=512, int targetHeight = 512) where TDepth : new()
+        public Image<Gray, byte> Normalize(Image<Bgr, byte> originalImage, int targetWidth=512, int targetHeight = 512)
         {
             var eyes = eyesDector.DetectEyes(originalImage);
             //DrawEyesRect(originalImage, eyes);
@@ -46,16 +46,17 @@ namespace Vision.Preprocess
             var targetDist = (1.0 - 2 * DESIDERED_LEFT_EYE_X) * targetWidth;
             var targetScale = targetDist / dist;
 
-            // determine the translation for cropping image
-            var tx = targetWidth * 0.5;
-            var ty = targetHeight * DESIDERED_LEFT_EYE_Y;
+            // determine the translation in order to center eyes into cropped image
+            var tx = (targetWidth * 0.5) - eyesCenterX;
+            var ty = (targetHeight * DESIDERED_LEFT_EYE_Y) - eyesCenterY;
 
             // create affine matrix
             using (var rotationMatrix = new RotationMatrix2D(new PointF(eyesCenterX, eyesCenterY), rotationAngle, targetScale))
             using (var affineMatrix = new Matrix<double>(rotationMatrix.Rows, rotationMatrix.Cols, rotationMatrix.DataPointer))
             {
-                affineMatrix.SetCellValue(0, 2, affineMatrix.GetCellValue(0, 2) + (tx - eyesCenterX));
-                affineMatrix.SetCellValue(1, 2, affineMatrix.GetCellValue(1, 2) + (ty - eyesCenterY));
+                // add the translation component to the rotation matrix
+                affineMatrix.SetCellValue(0, 2, affineMatrix.GetCellValue(0, 2) + tx);
+                affineMatrix.SetCellValue(1, 2, affineMatrix.GetCellValue(1, 2) + ty);
 
                 var resized = originalImage.WarpAffine(affineMatrix.Mat,
                     targetWidth,
@@ -67,7 +68,7 @@ namespace Vision.Preprocess
                 );
 
                 //ImageViewer.Show(resized);
-                return resized.Convert<Gray, TDepth>();
+                return resized.Convert<Gray, byte>();
             }
         }
 
@@ -76,10 +77,10 @@ namespace Vision.Preprocess
             img.Draw(eyes.Left, new Bgr(Color.Blue));
             img.Draw(eyes.Right, new Bgr(Color.Green));
             img.DrawPolyline(new Point[] { eyes.Left.GetCenter(), eyes.Right.GetCenter() }, false, new Bgr(Color.Red));
-            new System.Threading.Thread(() =>
+            /*new System.Threading.Thread(() =>
             {
                 ImageViewer.Show(img);
-            }).Start();
+            }).Start();*/
         }
 
         private double RadToDegree(double rad)

@@ -15,30 +15,13 @@ using Vision.Model;
 
 namespace Vision.UI
 {
-    public interface CBRView
-    {
-        event EventHandler OnSearchClick;
-        string SketchPath { get; }
-        Gender SketchGender { get; }
-
-        int RankSize { get; set; }
-        double WeightHair { get; set; }
-        double WeightEyebrows { get; set; }
-        double WeightEyes { get; set; }
-        double WeightNose { get; set; }
-        double WeightMouth { get; set; }
-        double WeightShape { get; set; }
-
-        void ShowPhotoResults(string[] images, string[] labels);
-        bool BackgroundLoading { get; set; }
-        string LoadingLabel { get; set; }
-    }
-
-    public partial class DashboardCBR : Form, CBRView
+    public partial class FormDashboardCBIR : Form, CBRView
     {
         public event EventHandler OnSearchClick;
+        public event EventHandler OnLoadDbClick;
 
         public string SketchPath { get => boxSketchPath.Text; }
+        public string GalleryPath { get => boxDatabasePath.Text; }
         public int RankSize { get => int.Parse(rankDimension.Text); set => rankDimension.Text = string.Format("{0}", value); }
         public double WeightHair { get => double.Parse(boxWeightHair.Text); set => boxWeightHair.Text = string.Format("{0}", value); }
         public double WeightEyebrows { get => double.Parse(boxWeightEyebrows.Text); set => boxWeightEyebrows.Text = string.Format("{0}", value); }
@@ -55,7 +38,8 @@ namespace Vision.UI
             private set => genderBox.SelectedItem = Enum.GetName(typeof(Gender), value);
         }
 
-        public DashboardCBR()
+        
+        public FormDashboardCBIR()
         {
             InitializeComponent();
             this.genderBox.Items.AddRange(Enum.GetNames(typeof(Gender)));
@@ -70,7 +54,7 @@ namespace Vision.UI
 
         private void TriggerLoading(bool value)
         {
-            if(!loadingBox.Visible)
+            if(!loadingBox.Visible && value)
             {
                 Enabled = false;
                 loadingLabel.Text = LoadingLabel;
@@ -87,7 +71,6 @@ namespace Vision.UI
         private void OnBtnSearchSketchClick(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(boxSketchPath.Text)) return;
-
             OnSearchClick.Invoke(this, EventArgs.Empty);
         }
 
@@ -99,9 +82,28 @@ namespace Vision.UI
         private string RequireSketchFileSelection()
         {
             fileDialog.Title = "Select a sketch";
-            fileDialog.FileName = null;
+            fileDialog.FileName = boxSketchPath.Text ?? "";
             fileDialog.Filter = "Image Files(*.BMP;*.PNG;*.JPG;*.GIF)|*.BMP;*.PNG;*.JPG;*.GIF|All files (*.*)|*.*";
-            return fileDialog.ShowDialog(this) == DialogResult.OK ? fileDialog.FileName : null;
+            return fileDialog.ShowDialog(this) == DialogResult.OK ? fileDialog.FileName : "";
+        }
+
+        private void OnDatabasePathClick(object sender, EventArgs e)
+        {
+            boxDatabasePath.Text = RequireDatabaseFileSelection();
+        }
+
+        private void OnBtnLoadDbClick(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(boxDatabasePath.Text)) return;
+            OnLoadDbClick.Invoke(this, EventArgs.Empty);
+        }
+
+        private string RequireDatabaseFileSelection()
+        {
+            fileDialog.Title = "Select a gallery features csv";
+            fileDialog.FileName = boxDatabasePath.Text ?? "";
+            fileDialog.Filter = "Csv Files(*.csv)|*.csv";
+            return fileDialog.ShowDialog(this) == DialogResult.OK ? fileDialog.FileName : "";
         }
     }
 }

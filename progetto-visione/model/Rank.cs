@@ -14,10 +14,15 @@ namespace Vision.Model
         public Rank<T, S> NormalizeScore(Func<S[], Func<S, S>> normalizeFunction)
         {
             var scoreNormFunction = normalizeFunction(this.Select(r => r.Item2).ToArray());
-            for(int i = 0; i < this.Count; i++)
+            var newRank = this.Select(item =>
             {
-                this[i] = Tuple.Create(this[i].Item1, scoreNormFunction(this[i].Item2));
-            }
+                return Tuple.Create(item.Item1, scoreNormFunction(item.Item2));
+            })
+                .OrderByDescending(item => item.Item2)
+                .ToRank();
+
+            Clear();
+            AddRange(newRank);
             return this;
         }
     }
@@ -27,14 +32,14 @@ namespace Vision.Model
         public static Rank<T, S> Empty<T, S>() { return Rank.Create(new List<Tuple<T, S>>()); }
         public static Rank<T, S> Create<T, S>(IEnumerable<Tuple<T, S>> list) { return new Rank<T, S>(list); }
         
-        public static Rank<T, double> FromMetric<T>(IEnumerable<Tuple<T, float[]>> db, float[] toCompareFeatures, FeatureCompareMetric compareMetric)
+        public static Rank<T, double> FromMetric<T>(IEnumerable<Tuple<T, double[]>> db, double[] toCompareFeatures, FeatureCompareMetric compareMetric)
         {
             return Rank.Create(db.Select(item => Tuple.Create(item.Item1, compareMetric(toCompareFeatures, item.Item2)))
                 .OrderByDescending(item => item.Item2)
                 .ToList());
         }
 
-        public static Rank<int, double> FromMetric(IEnumerable<float[]> db, float[] toCompareFeatures, FeatureCompareMetric compareMetric)
+        public static Rank<int, double> FromMetric(IEnumerable<double[]> db, double[] toCompareFeatures, FeatureCompareMetric compareMetric)
         {
             return Rank.Create(db.Select((item, index) => Tuple.Create(index, compareMetric(toCompareFeatures, item)))
                 .OrderByDescending(item => item.Item2)

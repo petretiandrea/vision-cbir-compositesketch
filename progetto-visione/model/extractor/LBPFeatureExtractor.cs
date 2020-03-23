@@ -1,5 +1,6 @@
 ﻿using Emgu.CV;
 using Emgu.CV.Structure;
+using Emgu.CV.UI;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -9,74 +10,31 @@ using System.Threading.Tasks;
 
 namespace Vision.Model.Extractor
 {
-    public abstract class AbstractLBPFeatureExtractor : AbstractFeatureExtrator
+    public struct BlockExtraction
     {
-        public int NumberOfCell { get; private set; }
-
-        public AbstractLBPFeatureExtractor(int numberOfCell)
-        {
-            this.NumberOfCell = numberOfCell;
-        }
-
-        protected Rectangle[] ComputePatches<TColor, TDepth>(Image<TColor, TDepth> img, int k)
-            where TColor : struct, IColor
-            where TDepth : new()
-        {
-            // TODO: compute overlapped patch
-            var patches = new Rectangle[k * k];
-            var patchSize = new Size(img.Width / k, img.Height / k);
-            var overlap = new Size(img.Width % k, img.Height % k);
-            for (int i = 0; i < patches.Length; i++)
-            {
-                var row = i / k;
-                var col = i % k;
-                var r = new Rectangle(
-                    col * patchSize.Width,
-                    row * patchSize.Height,
-                    patchSize.Width + overlap.Width,
-                    patchSize.Height + overlap.Height);
-                patches[i] = r;
-            }
-            return patches;
-        }
+        public int Size { get; set; }
+        public int Stride { get; set; }
     }
 
-    public class LBPFeatureExtractor : AbstractLBPFeatureExtractor
-    {
-        private LBP lbp;
-        public LBPFeatureExtractor(LBP lbp, int numberOfCell) : base(numberOfCell) {
-            this.lbp = lbp;
-        }
-
-        public override float[] ExtractDescriptor<TColor, TDepth>(Image<TColor, TDepth> image)
-        {
-            var lbpImage = lbp.Apply(image);
-            var patches = ComputePatches(lbpImage, NumberOfCell);
-            return patches
-                .Select(patch => lbpImage.GetSubRect(patch))
-                .Select(imgPatch => LBPUtils.CalculateHistogramFromLBP(imgPatch.Convert<Gray, byte>()))
-                .SelectMany(hist => hist)
-                .ToArray();
-        }
-    }
-
-    public class MLBPFeatureExtractor : AbstractLBPFeatureExtractor
+    public class MLBPFeatureExtractor : AbstractFeatureExtrator
     {
         private MultiscaleLBP lbp;
+        public BlockExtraction Block { get; private set; }
 
-        public MLBPFeatureExtractor(MultiscaleLBP lbp, int numberOfCell) : base(numberOfCell)
+        public MLBPFeatureExtractor(MultiscaleLBP lbp, BlockExtraction block)
         {
             this.lbp = lbp;
+            this.Block = block;
         }
-
-        public override float[] ExtractDescriptor<TColor, TDepth>(Image<TColor, TDepth> image)
+        
+        public override double[] ExtractDescriptor<TColor, TDepth>(Image<TColor, TDepth> image)
         {
             var multiscaleImages = lbp.Apply(image);
 
-            var patches = ComputePatches(image, NumberOfCell);
+            var patches = ImageUtils.SplitIntoBlocks(image, Block.Size, Block.Stride);
             return patches
                 .Select(patch => multiscaleImages.Select(lbpImage => lbpImage.GetSubRect(patch)).ToArray())
-                .Select(multiscalePatches => LBPUtils.CalculateHistogramFromMLBP(multiscalePatches))
+                .Select(multiscalePatches => lbp.HistogramFromMLBP(multiscalePatches))
                 .SelectMany(hist => hist)
                 .ToArray();
         }

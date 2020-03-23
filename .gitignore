@@ -518,3 +518,6 @@ MigrationBackup/
 # Backup folder for Package Reference Convert tool in Visual Studio 2017
 
 # End of https://www.gitignore.io/api/csharp,opencv,visualstudio
+/progetto-visione/resources/dataset
+/svd
+/svd2

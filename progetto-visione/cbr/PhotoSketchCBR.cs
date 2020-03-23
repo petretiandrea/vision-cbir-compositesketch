@@ -12,55 +12,78 @@ using Vision.Detector;
 using Vision.Model;
 using Vision.Model.Extractor;
 using Vision.performance;
-using Vision.Preprocess;
+using Vision.Normalization;
 
 namespace Vision.CBR
 {
-    public class PhotoSketchCBR
+    public class PhotoSketchCBIR
     {
         // METRICS for SIMILARITY
         private static readonly FeatureCompareMetric COMPONENT_METRIC = Metrics.Intersection;
         private static readonly FeatureCompareMetric SHAPE_METRIC = (f1, f2) => 1 - Metrics.CosineDistance(f1, f2);
 
-        private PhotoSketchAlgorithm photoSketchAlgo;
+        private PhotoSketchFeatureExtractor featureExtractor;
         public FusionStrategy SearchFusionStrategy { get; set; }
 
         // Database
         public FaceFeaturesDB Database { get; set; }
         
-        public PhotoSketchCBR(PhotoSketchAlgorithm featureExtractionAlgorithm)
+        public PhotoSketchCBIR(PhotoSketchFeatureExtractor featureExtractor)
         {
-            photoSketchAlgo = featureExtractionAlgorithm;
-            SearchFusionStrategy = new BordaCount(1, 1, 1, 1, 1, 1);
+            this.featureExtractor = featureExtractor;
+            SearchFusionStrategy = new WeightedSum(1, 1, 1, 1, 1, 1);
             Database = new FaceFeaturesDB();
         }
+        
 
         public Rank<PhotoMetadata, double> Search(string sketchPath, Gender gender, int maxImageToRetrive = 10)
         {
             if (Database.Entries.Length <= 0) return Rank.Empty<PhotoMetadata, double>();
             if (SearchFusionStrategy == null) throw new InvalidOperationException("No search fusion strategy is set.");
 
-            var sketchFeature = photoSketchAlgo.ExtractFaceFeatures(sketchPath);
+            var ranks = ComputeComponentRanks(sketchPath, gender);
 
-            var ranks = new Rank<PhotoMetadata, double>[6];
-
-            Task.WaitAll(
-                Task.Run(() => ranks[0] = MakeComponentRank(Database.FeaturesHair(gender), sketchFeature.Hair, photoSketchAlgo.Options.HairPatches)),
-                Task.Run(() => ranks[1] = MakeComponentRank(Database.FeaturesEyebrows(gender), sketchFeature.Eyebrows, photoSketchAlgo.Options.EyeBrowsPatches)),
-                //Task.Run(() => ranks[2] = MakeComponentRank(Database.FeaturesEyes(gender), sketchFeature.Eyes, photoSketchAlgo.Options.EyesPatches)),
-                Task.Run(() => ranks[3] = MakeComponentRank(Database.FeaturesNose(gender), sketchFeature.Nose, photoSketchAlgo.Options.NosePatches)),
-                Task.Run(() => ranks[4] = MakeComponentRank(Database.FeaturesMouth(gender), sketchFeature.Mouth, photoSketchAlgo.Options.MouthPatches)),
-                //Task.Run(() => ranks[5] = Rank.FromMetric(Database.FeaturesShape(gender), sketchFeature.Shape, SHAPE_METRIC).NormalizeScore(ScoreNormalization.Tanh))
-                );
-            
-            return SearchFusionStrategy.Fusion(ranks[0], ranks[1], /*ranks[2],*/ ranks[3], ranks[4]/*, ranks[5]*/).Take(maxImageToRetrive).ToRank();
+            return SearchFusionStrategy.Fusion(ranks[0], ranks[1], ranks[2], ranks[3], ranks[4], ranks[5]).Take(maxImageToRetrive).ToRank();
         }
-        
-        private Rank<PhotoMetadata, double> MakeComponentRank(Tuple<PhotoMetadata, float[]>[] dbFeatures, float[] features, int numberOfPatch)
+
+        public Rank<PhotoMetadata, double>[] ComputeComponentRanks(string sketchPath, Gender gender)
         {
-            var rank =  Rank.FromMetric(dbFeatures, features, (f1, f2) => LBPUtils.CalculareSimilarity(f1, f2, numberOfPatch, COMPONENT_METRIC));
+            var sketchFeature = featureExtractor.ExtractFaceFeatures(sketchPath);
+            var ranks = new Rank<PhotoMetadata, double>[6];
+            
+            Task.WaitAll(
+                Task.Run(() => ranks[0] = MakeComponentRank(Database.FeaturesHair(gender), sketchFeature.Hair)),
+                Task.Run(() => ranks[1] = MakeComponentRank(Database.FeaturesEyebrows(gender), sketchFeature.Eyebrows)),
+                Task.Run(() => ranks[2] = MakeComponentRank(Database.FeaturesEyes(gender), sketchFeature.Eyes)),
+                Task.Run(() => ranks[3] = MakeComponentRank(Database.FeaturesNose(gender), sketchFeature.Nose)),
+                Task.Run(() => ranks[4] = MakeComponentRank(Database.FeaturesMouth(gender), sketchFeature.Mouth)),
+                Task.Run(() => ranks[5] = Rank.FromMetric(Database.FeaturesShape(gender), sketchFeature.Shape, SHAPE_METRIC).NormalizeScore(ScoreNormalization.Tanh))
+                );
+
+            return ranks;
+        }
+
+        private Rank<PhotoMetadata, double> MakeComponentRank(Tuple<PhotoMetadata, double[]>[] dbFeatures, ComponentFeature componentFeatures)
+        {
+            var rank =  Rank.FromMetric(dbFeatures, componentFeatures.Features, (f1, f2) => ComputeBlockSimilarity(f1, f2, componentFeatures.Blocks, COMPONENT_METRIC));
             return rank.NormalizeScore(ScoreNormalization.Tanh);
         }
-        
+
+        public static double ComputeBlockSimilarity(double[] features1, double[] features2, int numberOfPatch, FeatureCompareMetric metric)
+        {
+            if (features1.Length != features2.Length) throw new ArgumentException("The features vector must be to same length");
+
+            var featuresChunckLength = features1.Length / numberOfPatch;
+            return Enumerable.Range(0, numberOfPatch)
+                .AsParallel()
+                .Select(cellIndex => new
+                {
+                    PhotoPatchFeatures = features1.SubArray(cellIndex * featuresChunckLength, featuresChunckLength),
+                    SketchPatchFeature = features2.SubArray(cellIndex * featuresChunckLength, featuresChunckLength)
+                })
+                .Select(chunkFeatures => metric(chunkFeatures.PhotoPatchFeatures, chunkFeatures.SketchPatchFeature))
+                .Aggregate(0d, (acc, sim) => acc + sim);
+        }
+
     }
 }

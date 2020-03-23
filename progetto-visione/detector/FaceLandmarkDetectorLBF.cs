@@ -20,7 +20,7 @@ namespace Vision.Detector
     {
         private static Range EYES_POINT_RANGE = new Range(36, 47);
         private static Range EYEBROWS_POINT_RANGE = new Range(17, 26);
-        private static Range NOSE_POINT_RANGE = new Range(28, 35);
+        private static Range NOSE_POINT_RANGE = new Range(29, 35);
         private static Range MOUTH_POINT_RANGE = new Range(48, 67);
 
         private FaceDetector faceDetector;
@@ -33,41 +33,39 @@ namespace Vision.Detector
             this.facemark.LoadModel(landmarkModel);
         }
 
-        public FaceComponentContainer<Rectangle, PointF[]> Fit(IImage image)
+        private readonly object syncLock = new object();
+        public PointF[][] Fit(IImage image)
         {
-            var faces = new VectorOfRect(faceDetector.DetectBoxFaces(image));
-            var landmarks = new VectorOfVectorOfPointF();
-            
-            if (facemark.Fit(image, faces, landmarks))
+            lock (syncLock)
             {
-                return ExtractFacialComponentRects(image, landmarks.ToArrayOfArray().First());
+                var faces = new VectorOfRect(faceDetector.DetectBoxFaces(image));
+                var facesLandmarks = new VectorOfVectorOfPointF();
+                if (!facemark.Fit(image, faces, facesLandmarks)) throw new ArgumentException("No landamarks point detected for input image");
+
+                var face = faces.ToArray().First();
+                var landmarks = facesLandmarks.ToArrayOfArray().First();
+                var componentLandmarkPoints = new PointF[6][];
+
+                // extract landarmarks points for each component
+                componentLandmarkPoints[0] = GetComponentPoints(landmarks, EYEBROWS_POINT_RANGE);
+                componentLandmarkPoints[1] = GetComponentPoints(landmarks, EYES_POINT_RANGE);
+                componentLandmarkPoints[2] = GetComponentPoints(landmarks, NOSE_POINT_RANGE);
+                componentLandmarkPoints[3] = GetComponentPoints(landmarks, MOUTH_POINT_RANGE);
+                componentLandmarkPoints[4] = landmarks;
+                // face bounding box
+                componentLandmarkPoints[5] = new PointF[] {
+                    new PointF(face.Left, face.Top),
+                    new PointF(face.Right, face.Bottom)
+                };
+                return componentLandmarkPoints;
             }
-            return null;
         }
 
-        private FaceComponentContainer<Rectangle, PointF[]> ExtractFacialComponentRects(IImage image, PointF[] landamarksPoints)
+        private PointF[] GetComponentPoints(PointF[] landmarks, Range range)
         {
-            var eyebrows = ExtractRectFromLandmarks(landamarksPoints, EYEBROWS_POINT_RANGE);
-            var eyes = ExtractRectFromLandmarks(landamarksPoints, EYES_POINT_RANGE);
-            var nose = ExtractRectFromLandmarks(landamarksPoints, NOSE_POINT_RANGE);
-            var mouth = ExtractRectFromLandmarks(landamarksPoints, MOUTH_POINT_RANGE);
-            var hair = ExtractHairRectangle(image, eyebrows);
-            return FaceComponentContainer.Create(hair, eyebrows, eyes, nose, mouth, landamarksPoints);
-        }
-        
-        private Rectangle ExtractRectFromLandmarks(PointF[] landamarksPoints, Range range)
-        {
-            var points = landamarksPoints.Skip(range.Start)
+            return landmarks.Skip(range.Start)
                 .Take(range.End - range.Start + 1)
                 .ToArray();
-            var rect = PointCollection.BoundingRectangle(points);
-            return rect;
-        }
-
-        private Rectangle ExtractHairRectangle(IImage image, Rectangle eyebrowsRect)
-        {
-            var hairHeight = image.Size.Height - (image.Size.Height - eyebrowsRect.Top);
-            return new Rectangle(0, 0, image.Size.Width, hairHeight);
         }
     }
 }
