@@ -24,5 +24,7 @@ namespace Vision
         {
             return (T)Enum.Parse(typeof(T), value, true);
         }
+
+
     }
 }

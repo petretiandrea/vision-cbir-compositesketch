@@ -7,26 +7,26 @@ using Emgu.CV;
 
 namespace Vision.Model
 {
-    using Feature = System.Single;
+    using Feature = System.Double;
 
     public interface FeatureExtractor
     {
-        Feature[] ExtractDescriptor<TColor, TDepth>(Image<TColor, TDepth> image)
+        double[] ExtractDescriptor<TColor, TDepth>(Image<TColor, TDepth> image)
             where TColor : struct, IColor
             where TDepth : new();
 
-        List<Feature[]> ExtractDescriptors<TColor, TDepth>(Image<TColor, TDepth>[] images)
+        List<double[]> ExtractDescriptors<TColor, TDepth>(Image<TColor, TDepth>[] images)
             where TColor : struct, IColor
             where TDepth : new();
     }
 
     public abstract class AbstractFeatureExtrator : FeatureExtractor
     {
-        public abstract float[] ExtractDescriptor<TColor, TDepth>(Image<TColor, TDepth> image)
+        public abstract double[] ExtractDescriptor<TColor, TDepth>(Image<TColor, TDepth> image)
             where TColor : struct, IColor
             where TDepth : new();
 
-        public List<float[]> ExtractDescriptors<TColor, TDepth>(Image<TColor, TDepth>[] images)
+        public List<double[]> ExtractDescriptors<TColor, TDepth>(Image<TColor, TDepth>[] images)
             where TColor : struct, IColor
             where TDepth : new()
         {

@@ -14,6 +14,8 @@ namespace Vision.Model.Extractor
         Image<Gray, byte> Apply<TColor, TDepth>(Image<TColor, TDepth> image)
             where TColor : struct, IColor
             where TDepth : new();
+
+        double[] HistogramFromLBP(Image<Gray, byte> lbpImage);
     }
 
     public interface MultiscaleLBP
@@ -21,49 +23,7 @@ namespace Vision.Model.Extractor
         Image<Gray, byte>[] Apply<TColor, TDepth>(Image<TColor, TDepth> image)
             where TColor : struct, IColor
             where TDepth : new();
-    }
 
-    public static class LBPUtils
-    {
-        public static float[] CalculateHistogramFromLBP(Image<Gray, byte> image)
-        {
-            var norm = image.Width * image.Height;
-            using (var hist = new DenseHistogram(256, new RangeF(0, 256)))
-            {
-                hist.Calculate(new Image<Gray, byte>[] { image }, false, null);
-                //var h  =hist.GetBinValues().Select(v => v / norm).ToArray();
-                return hist.GetBinValues();
-            }
-        }
-
-        public static float[] CalculateHistogramFromMLBP(Image<Gray, byte>[] images)
-        {
-            return images.Select(img => LBPUtils.CalculateHistogramFromLBP(img))
-                .SelectMany(hist => hist)
-                .ToArray();
-        }
-
-        public static double CalculareSimilarity(float[] features1, float[] features2, int numberOfPatch, FeatureCompareMetric metric)
-        {
-            if (features1.Length != features2.Length) throw new ArgumentException("The features vector must be to same length");
-
-            var featuresChunckLength = features1.Length /  numberOfPatch;
-            return Enumerable.Range(0, numberOfPatch)
-                .AsParallel()
-                .Select(cellIndex => new
-                {
-                    PhotoPatchFeatures = features1.SubArray(cellIndex * featuresChunckLength, featuresChunckLength),
-                    SketchPatchFeature = features2.SubArray(cellIndex * featuresChunckLength, featuresChunckLength)
-                })
-                .Select(chunkFeatures => metric(chunkFeatures.PhotoPatchFeatures, chunkFeatures.SketchPatchFeature))
-                .Aggregate(0d, (acc, sim) => acc + sim);
-        }
-
-        public static T[] SubArray<T>(this T[] data, int index, int length)
-        {
-            T[] result = new T[length];
-            Array.Copy(data, index, result, 0, length);
-            return result;
-        }
+        double[] HistogramFromMLBP(params Image<Gray, byte>[] lbpImages);
     }
 }

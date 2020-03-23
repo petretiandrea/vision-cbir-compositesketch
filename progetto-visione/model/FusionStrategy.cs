@@ -9,19 +9,19 @@ namespace Vision.Model
 {
     public interface FusionStrategy
     {
-        Rank<T, double> Fusion<T, S>(params Rank<T, S>[] rankBoards);
+        Rank<T, double> Fusion<T>(params Rank<T, double>[] rankBoards);
     }
 
-    public class BordaCount : FusionStrategy
+    public class WeightedSum : FusionStrategy
     {
         public double[] Weights { get; private set; }
 
-        public BordaCount(params double[] weights)
+        public WeightedSum(params double[] weights)
         {
             this.Weights = weights;
         }
 
-        public Rank<T, double> Fusion<T, S>(params Rank<T, S>[] rankBoards)
+        public Rank<T, double> Fusion<T>(params Rank<T, double>[] rankBoards)
         {
             Dictionary<T, double> finalRankBoard = new Dictionary<T, double>();
 
@@ -34,13 +34,14 @@ namespace Vision.Model
             return orderedFinalRank.ToRank();
         }
 
-        private void AddBoard<T, S>(Dictionary<T, double> finalRankBoard, Rank<T, S> rankBoard, double weight)
+        private void AddBoard<T>(Dictionary<T, double> finalRankBoard, Rank<T, double> rankBoard, double weight)
         {
             for(int i = 0; i < rankBoard.Count; i++)
             {
                 T key = rankBoard[i].Item1;
                 double currentScore = 0; // actual score for the same entry
-                double score = weight * (rankBoard.Count - i); // score for this enty
+                //double score = weight * (rankBoard.Count - i); // score for this enty
+                double score = weight * rankBoard[i].Item2;
                 // if entry is present, sum the scores, otherwise add the new entry
                 if(finalRankBoard.TryGetValue(key, out currentScore))
                 {

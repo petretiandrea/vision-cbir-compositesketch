@@ -1,7 +1,7 @@
 ﻿using Vision.UI;
 namespace Vision.UI
 {
-    partial class DashboardCBR
+    partial class FormDashboardCBIR
     {
         /// <summary>
         /// Variabile di progettazione necessaria.
@@ -33,6 +33,7 @@ namespace Vision.UI
             this.loadingBox = new System.Windows.Forms.Panel();
             this.loadingLabel = new System.Windows.Forms.Label();
             this.loadingBar = new System.Windows.Forms.ProgressBar();
+            this.imageGallery = new Vision.UI.ImageGallery();
             this.label1 = new System.Windows.Forms.Label();
             this.boxSketchPath = new System.Windows.Forms.TextBox();
             this.fileDialog = new System.Windows.Forms.OpenFileDialog();
@@ -55,6 +56,9 @@ namespace Vision.UI
             this.boxWeightShape = new System.Windows.Forms.TextBox();
             this.rankDimension = new System.Windows.Forms.TextBox();
             this.label9 = new System.Windows.Forms.Label();
+            this.boxDatabasePath = new System.Windows.Forms.TextBox();
+            this.label10 = new System.Windows.Forms.Label();
+            this.btnLoadDb = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.loadingBox.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -64,9 +68,10 @@ namespace Vision.UI
             // groupBox1
             // 
             this.groupBox1.Controls.Add(this.loadingBox);
-            this.groupBox1.Location = new System.Drawing.Point(12, 154);
+            this.groupBox1.Controls.Add(this.imageGallery);
+            this.groupBox1.Location = new System.Drawing.Point(12, 191);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(762, 440);
+            this.groupBox1.Size = new System.Drawing.Size(762, 403);
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Results";
@@ -75,10 +80,10 @@ namespace Vision.UI
             // 
             this.loadingBox.Controls.Add(this.loadingLabel);
             this.loadingBox.Controls.Add(this.loadingBar);
-            this.loadingBox.Location = new System.Drawing.Point(174, 135);
+            this.loadingBox.Location = new System.Drawing.Point(189, 152);
             this.loadingBox.Name = "loadingBox";
             this.loadingBox.Size = new System.Drawing.Size(436, 45);
-            this.loadingBox.TabIndex = 0;
+            this.loadingBox.TabIndex = 20;
             this.loadingBox.Visible = false;
             // 
             // loadingLabel
@@ -97,6 +102,14 @@ namespace Vision.UI
             this.loadingBar.Size = new System.Drawing.Size(430, 23);
             this.loadingBar.Style = System.Windows.Forms.ProgressBarStyle.Marquee;
             this.loadingBar.TabIndex = 0;
+            // 
+            // imageGallery
+            // 
+            this.imageGallery.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.imageGallery.Location = new System.Drawing.Point(3, 16);
+            this.imageGallery.Name = "imageGallery";
+            this.imageGallery.Size = new System.Drawing.Size(756, 384);
+            this.imageGallery.TabIndex = 1;
             // 
             // label1
             // 
@@ -151,7 +164,7 @@ namespace Vision.UI
             // groupBox2
             // 
             this.groupBox2.Controls.Add(this.tableLayoutPanel1);
-            this.groupBox2.Location = new System.Drawing.Point(12, 51);
+            this.groupBox2.Location = new System.Drawing.Point(12, 91);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Size = new System.Drawing.Size(762, 97);
             this.groupBox2.TabIndex = 8;
@@ -317,11 +330,41 @@ namespace Vision.UI
             this.label9.TabIndex = 16;
             this.label9.Text = "Rank Size";
             // 
+            // boxDatabasePath
+            // 
+            this.boxDatabasePath.Location = new System.Drawing.Point(12, 64);
+            this.boxDatabasePath.Name = "boxDatabasePath";
+            this.boxDatabasePath.Size = new System.Drawing.Size(565, 20);
+            this.boxDatabasePath.TabIndex = 17;
+            this.boxDatabasePath.Click += new System.EventHandler(this.OnDatabasePathClick);
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(9, 48);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(77, 13);
+            this.label10.TabIndex = 18;
+            this.label10.Text = "Database CSV";
+            // 
+            // btnLoadDb
+            // 
+            this.btnLoadDb.Location = new System.Drawing.Point(583, 62);
+            this.btnLoadDb.Name = "btnLoadDb";
+            this.btnLoadDb.Size = new System.Drawing.Size(191, 23);
+            this.btnLoadDb.TabIndex = 19;
+            this.btnLoadDb.Text = "Load database";
+            this.btnLoadDb.UseVisualStyleBackColor = true;
+            this.btnLoadDb.Click += new System.EventHandler(this.OnBtnLoadDbClick);
+            // 
             // DashboardCBR
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(786, 603);
+            this.Controls.Add(this.btnLoadDb);
+            this.Controls.Add(this.label10);
+            this.Controls.Add(this.boxDatabasePath);
             this.Controls.Add(this.label9);
             this.Controls.Add(this.rankDimension);
             this.Controls.Add(this.groupBox2);
@@ -346,7 +389,6 @@ namespace Vision.UI
 
         #endregion
         private System.Windows.Forms.GroupBox groupBox1;
-        private ImageGallery imageGallery;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TextBox boxSketchPath;
         private System.Windows.Forms.OpenFileDialog fileDialog;
@@ -367,11 +409,15 @@ namespace Vision.UI
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.Label label8;
+        private System.Windows.Forms.TextBox boxWeightShape;
+        private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.TextBox boxDatabasePath;
+        private System.Windows.Forms.Label label10;
+        private System.Windows.Forms.Button btnLoadDb;
         private System.Windows.Forms.Panel loadingBox;
         private System.Windows.Forms.Label loadingLabel;
         private System.Windows.Forms.ProgressBar loadingBar;
-        private System.Windows.Forms.TextBox boxWeightShape;
-        private System.Windows.Forms.Label label9;
+        private ImageGallery imageGallery;
     }
 }
 

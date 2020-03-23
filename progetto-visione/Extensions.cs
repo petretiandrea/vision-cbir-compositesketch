@@ -9,7 +9,17 @@ using Vision.Model;
 
 namespace Vision
 {
-    public static class ImageExtension
+    public static class Extensions
+    {
+        public static T[] SubArray<T>(this T[] data, int index, int length)
+        {
+            T[] result = new T[length];
+            Array.Copy(data, index, result, 0, length);
+            return result;
+        }
+    }
+
+    public static class MatrixExtensions
     {
         public static void SetCellValue<TDepth>(this Matrix<TDepth> m, int row, int col, double value) where TDepth : new()
         {
@@ -38,4 +48,6 @@ namespace Vision
             return Rank.Create(enumarable);
         }
     }
+
+    
 }

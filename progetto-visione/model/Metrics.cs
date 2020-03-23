@@ -9,11 +9,11 @@ using Vision.Model;
 
 namespace Vision.Model
 {
-    public delegate double FeatureCompareMetric(float[] features1, float[] features2);
+    public delegate double FeatureCompareMetric(double[] features1, double[] features2);
     
     public static class Metrics
     {
-        public static FeatureCompareMetric Intersection = (float[] features1, float[] features2) =>
+        public static FeatureCompareMetric Intersection = (double[] features1, double[] features2) =>
         {
             var normFactor = Math.Min(features1.Sum(), features2.Sum());
             var intersection = Enumerable.Range(0, features1.Length)
@@ -23,7 +23,7 @@ namespace Vision.Model
             return intersection / normFactor;
         };
 
-        public static FeatureCompareMetric CosineDistance = (float[] features1, float[] features2) =>
+        public static FeatureCompareMetric CosineDistance = (double[] features1, double[] features2) =>
         {
             var f1f2 = features1.Zip(features2, (f1, f2) => f1 * f2).Sum();
             var f1f1 = features1.Select(f1 => f1 * f1).Sum();
@@ -42,7 +42,7 @@ namespace Vision.Model
                 var stddev = new MCvScalar();
                 var mean = new MCvScalar();
                 CvInvoke.MeanStdDev(matrix, ref mean, ref stddev);
-                return score => 0.5 * Math.Tanh(0.01 * ((score - mean.V0) / stddev.V0)) + 1;
+                return score => 0.5 * (Math.Tanh(0.01 * ((score - mean.V0) / stddev.V0)) + 1);
             }
         };
     }

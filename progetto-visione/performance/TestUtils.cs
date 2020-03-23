@@ -1,21 +1,27 @@
-﻿using System;
+﻿using Emgu.CV;
+using Emgu.CV.Structure;
+using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Vision.Model;
+using Vision.Normalization;
 
 namespace Vision.performance
 {
     public static class TestUtils
     {
-        public static PhotoSketchAlgorithm GetAlgorithm()
+        public static PhotoSketchFeatureExtractor GetPhotoSketchFeatureExtractor(PointF[][] referenceShape)
         {
-            var options = PhotoSketchAlgorithmOptions.Default;
-            options.Scales = new float[] { 1, 3, 5, 7 };
-            return new PhotoSketchAlgorithm(options);
+            var boundingBoxParams = Params.GetComponentBoundingBoxParams();
+            var blockParams = Params.GetComponentBlockParams();
+            var detector = ComponentAlignerFactory.FromReferenceShape(boundingBoxParams, referenceShape);
+
+            return PhotoSketchFeatureExtractorFactory.Default(detector, blockParams);
         }
 
         public static double TestSpeed(Action action)

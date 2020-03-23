@@ -10,32 +10,24 @@ namespace Vision.Model
 {
     public class FaceFeaturesDB
     {
-        //private IDictionary<PhotoMetadata, FaceComponentContainer<float[], float[]>> memoryDb = new Dictionary<PhotoMetadata, FaceComponentContainer<float[], float[]>>();
-        private IDictionary<PhotoMetadata, FaceComponentContainer<float[], float[]>> memoryDb = new ConcurrentDictionary<PhotoMetadata, FaceComponentContainer<float[], float[]>>();
-
-        public void AddPhotoFeatures(PhotoMetadata photo, FaceComponentContainer<float[], float[]> features)
-        {
-            memoryDb[photo] = features;
-        }
-
-        public Tuple<PhotoMetadata, FaceComponentContainer<float[], float[]>>[] Entries => memoryDb.Select(e => Tuple.Create(e.Key, e.Value)).ToArray();
-        public Tuple<PhotoMetadata, float[]>[] FeaturesEyes(Gender gender) => MapFilter(gender, tuple => tuple.Eyes);
-        public Tuple<PhotoMetadata, float[]>[] FeaturesEyebrows(Gender gender) => MapFilter(gender, tuple => tuple.Eyebrows);
-        public Tuple<PhotoMetadata, float[]>[] FeaturesNose(Gender gender) => MapFilter(gender, tuple => tuple.Nose);
-        public Tuple<PhotoMetadata, float[]>[] FeaturesMouth(Gender gender) => MapFilter(gender, tuple => tuple.Mouth);
-        public Tuple<PhotoMetadata, float[]>[] FeaturesHair(Gender gender) => MapFilter(gender, tuple => tuple.Hair);
-        public Tuple<PhotoMetadata, float[]>[] FeaturesShape(Gender gender) => MapFilter(gender, tuple => tuple.Shape);
-
-        private Tuple<PhotoMetadata, T>[] MapFilter<T>(Gender gender, Func<FaceComponentContainer<float[], float[]>, T> map)
-        {
-            var genderFiltered = gender == Gender.UNKNOWN ? memoryDb : memoryDb.Where(tuple => tuple.Key.Gender == Gender.UNKNOWN || tuple.Key.Gender == gender);
-            return genderFiltered.Select(tuple => Tuple.Create(tuple.Key, map(tuple.Value))).ToArray();
-        }
-
-
-        public static FaceFeaturesDB FromDump(string csvFilename)
+        public static FaceFeaturesDB CreateFromDump(string csvFilename)
         {
             return FaceFeaturesDBSerializer.ReadCSV(csvFilename);
+        }
+
+        private IDictionary<PhotoMetadata, FaceFeatures> memoryDb = new ConcurrentDictionary<PhotoMetadata, FaceFeatures>();
+
+        public Tuple<PhotoMetadata, FaceFeatures>[] Entries => memoryDb.Select(e => Tuple.Create(e.Key, e.Value)).ToArray();
+        public Tuple<PhotoMetadata, double[]>[] FeaturesEyes(Gender gender) => MapFilter(gender, tuple => tuple.Eyes.Features);
+        public Tuple<PhotoMetadata, double[]>[] FeaturesEyebrows(Gender gender) => MapFilter(gender, tuple => tuple.Eyebrows.Features);
+        public Tuple<PhotoMetadata, double[]>[] FeaturesNose(Gender gender) => MapFilter(gender, tuple => tuple.Nose.Features);
+        public Tuple<PhotoMetadata, double[]>[] FeaturesMouth(Gender gender) => MapFilter(gender, tuple => tuple.Mouth.Features);
+        public Tuple<PhotoMetadata, double[]>[] FeaturesHair(Gender gender) => MapFilter(gender, tuple => tuple.Hair.Features);
+        public Tuple<PhotoMetadata, double[]>[] FeaturesShape(Gender gender) => MapFilter(gender, tuple => tuple.Shape);
+
+        public void AddPhotoFeatures(PhotoMetadata photo, FaceFeatures features)
+        {
+            memoryDb[photo] = features;
         }
 
         public bool Dump(string csvFilename)
@@ -43,77 +35,84 @@ namespace Vision.Model
             try {
                 FaceFeaturesDBSerializer.SaveCSV(csvFilename, this);
                 return true;
-            } catch (Exception e) {
+            } catch (Exception) {
                 return false;
             }
         }
-    }
 
-    static class FaceFeaturesDBSerializer
-    {
-        private static List<string> columnNames = new List<string> {
-            "Id", "Path", "Gender", "FeaturesHair", "FeaturesEyebrows", "FeaturesEyes", "FeaturesNose", "FeaturesMouth", "FeaturesShape"
-        };
-
-        public static void SaveCSV(string csvFile, FaceFeaturesDB face, string delim = ",")
+        private Tuple<PhotoMetadata, double[]>[] MapFilter(Gender gender, Func<FaceFeatures, double[]> map)
         {
-            using (var writer = new StreamWriter(csvFile))
-            {
-                writer.WriteLine(string.Join(delim, columnNames));
-                foreach (var entry in face.Entries)
-                {
-                    var metadata = string.Join(delim, PhotoMetadataCsv.Serializer(entry.Item1, Path.GetFullPath(csvFile)));
-                    writer.Write(string.Join(delim,
-                        metadata,
-                        Escape(string.Join(";", entry.Item2.Hair)),
-                        Escape(string.Join(";", entry.Item2.Eyebrows)),
-                        Escape(string.Join(";", entry.Item2.Eyes)),
-                        Escape(string.Join(";", entry.Item2.Nose)),
-                        Escape(string.Join(";", entry.Item2.Mouth)),
-                        Escape(string.Join(";", entry.Item2.Shape))
-                    ));
-                    writer.WriteLine();
-                }
-                writer.Flush();
-                writer.Close();
-            }
+            var genderFiltered = gender == Gender.UNKNOWN ? memoryDb : memoryDb.Where(tuple => tuple.Key.Gender == Gender.UNKNOWN || tuple.Key.Gender == gender);
+            return genderFiltered.Select(tuple => Tuple.Create(tuple.Key, map(tuple.Value))).ToArray();
         }
         
-        public static FaceFeaturesDB ReadCSV(string filename, string delim = ",")
+
+        private class FaceFeaturesDBSerializer
         {
-            var db = new FaceFeaturesDB();
-            using (var csvreader = new CsvReader(new StreamReader(filename), true))
+            private static List<string> columnNames = new List<string> {
+                "Id", "Path", "Gender", "FeaturesHair", "FeaturesEyebrows", "FeaturesEyes", "FeaturesNose", "FeaturesMouth", "FeaturesShape"
+            };
+
+            public static void SaveCSV(string csvFile, FaceFeaturesDB face, string delim = ",")
             {
-                var headers = csvreader.GetFieldHeaders();
-                while(csvreader.ReadNextRecord())
+                using (var writer = new StreamWriter(csvFile))
                 {
-                    var metdata = PhotoMetadataCsv.Deserializer(filename, csvreader);
-                    var features = FaceComponentContainer.Create(
-                        ParseEscapedVector(csvreader[3]),
-                        ParseEscapedVector(csvreader[4]),
-                        ParseEscapedVector(csvreader[5]),
-                        ParseEscapedVector(csvreader[6]),
-                        ParseEscapedVector(csvreader[7]),
-                        ParseEscapedVector(csvreader[8])
-                    );
-                    db.AddPhotoFeatures(metdata, features);
+                    writer.WriteLine(string.Join(delim, columnNames));
+                    foreach (var entry in face.Entries)
+                    {
+                        var metadata = string.Join(delim, PhotoMetadataCsv.Serializer(entry.Item1, Path.GetFullPath(csvFile)));
+                        writer.Write(string.Join(delim,
+                            metadata,
+                            Escape(string.Join(";", entry.Item2.Hair.Features)),
+                            Escape(string.Join(";", entry.Item2.Eyebrows.Features)),
+                            Escape(string.Join(";", entry.Item2.Eyes.Features)),
+                            Escape(string.Join(";", entry.Item2.Nose.Features)),
+                            Escape(string.Join(";", entry.Item2.Mouth.Features)),
+                            Escape(string.Join(";", entry.Item2.Shape))
+                        ));
+                        writer.WriteLine();
+                    }
+                    writer.Flush();
+                    writer.Close();
                 }
             }
-            return db;
-        }
 
-        private static float[] ParseEscapedVector(string vector)
-        {
-            return vector.Trim()
-                .Replace("\"", "")
-                .Split(';')
-                .Select(v => float.Parse(v))
-                .ToArray();
-        }
+            public static FaceFeaturesDB ReadCSV(string filename, string delim = ",")
+            {
+                var db = new FaceFeaturesDB();
+                using (var csvreader = new CsvReader(new StreamReader(filename), true))
+                {
+                    var headers = csvreader.GetFieldHeaders();
+                    while (csvreader.ReadNextRecord())
+                    {
+                        var metdata = PhotoMetadataCsv.Deserializer(filename, csvreader);
+                        var features = new FaceFeatures(
+                            new ComponentFeature(ParseEscapedVector(csvreader[3]), 0),
+                            new ComponentFeature(ParseEscapedVector(csvreader[4]), 0),
+                            new ComponentFeature(ParseEscapedVector(csvreader[5]), 0),
+                            new ComponentFeature(ParseEscapedVector(csvreader[6]), 0),
+                            new ComponentFeature(ParseEscapedVector(csvreader[7]), 0),
+                            ParseEscapedVector(csvreader[8])
+                        );
+                        db.AddPhotoFeatures(metdata, features);
+                    }
+                }
+                return db;
+            }
 
-        private static string Escape(string value)
-        {
-            return $"\"{value}\"";
+            private static double[] ParseEscapedVector(string vector)
+            {
+                return vector.Trim()
+                    .Replace("\"", "")
+                    .Split(';')
+                    .Select(v => double.Parse(v))
+                    .ToArray();
+            }
+
+            private static string Escape(string value)
+            {
+                return $"\"{value}\"";
+            }
         }
     }
 }

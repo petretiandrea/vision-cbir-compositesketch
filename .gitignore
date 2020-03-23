@@ -519,3 +519,5 @@ MigrationBackup/
 
 # End of https://www.gitignore.io/api/csharp,opencv,visualstudio
 /progetto-visione/resources/dataset
+/svd
+/svd2
